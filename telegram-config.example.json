@@ -1,0 +1,10 @@
+{
+  "api_id": 1234567,
+  "api_hash": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+  "phone": "+375447224002",
+  "chat": "@phys8math8bot",
+  "player_name": "Леончик",
+  "model_path": "models/lu_luna.json",
+  "session": "data/telegram-assistant",
+  "reply_delay_seconds": 20
+}

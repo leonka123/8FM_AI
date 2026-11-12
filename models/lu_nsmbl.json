@@ -1,0 +1,30 @@
+{
+  "format": "eightfm-ensemble",
+  "name": "lu_nsmbl",
+  "seed": 0,
+  "members": [
+    {
+      "name": "lu_luna",
+      "kind": "rl",
+      "path": "models/lu_luna.json",
+      "weight": 0.5,
+      "temperature": 1.0
+    },
+    {
+      "name": "classic-rl",
+      "kind": "rl",
+      "path": "models/classic-rl.json",
+      "weight": 0.3,
+      "temperature": 1.0
+    },
+    {
+      "name": "supervised",
+      "kind": "supervised",
+      "path": "models/classic-policy.json",
+      "weight": 0.2,
+      "temperature": 1.0
+    }
+  ],
+  "description": "Weighted soft-vote blend of trained 8FM policies.",
+  "combining_rule": "P(a) = sum_i w_i * softmax(score_i / T_i) / sum_i w_i"
+}

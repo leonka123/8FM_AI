@@ -1,0 +1,45 @@
+name: Build Windows EXE
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-desktop.txt pyinstaller
+
+      - name: Run tests
+        run: python -X utf8 -m unittest discover -s tests
+
+      - name: Build executable
+        run: powershell -ExecutionPolicy Bypass -File build_app.ps1
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: 8FM-Assistant-windows
+          path: dist/8FM-Assistant.exe
+          if-no-files-found: error
+
+      - name: Attach EXE to release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/8FM-Assistant.exe
+          generate_release_notes: true

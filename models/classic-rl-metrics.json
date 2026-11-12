@@ -1,0 +1,5246 @@
+{
+  "format": "eightfm-rl-training-metrics",
+  "config": {
+    "updates": 160,
+    "games_per_update": 32,
+    "player_counts": [
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "seed": 47,
+    "warm_start_games": 800,
+    "bc_epochs": 4,
+    "teacher": "combo+greedy fallback",
+    "learning_rate": 0.00025,
+    "batch_size": 256,
+    "ppo_epochs": 4,
+    "clip_ratio": 0.2,
+    "gamma": 0.99,
+    "gae_lambda": 0.95,
+    "entropy_coef": 0.02,
+    "value_coef": 0.25,
+    "league_fraction": 0.5,
+    "eval_games": 24,
+    "eval_seed_base": 40000,
+    "output": "models\\classic-rl.json",
+    "latest_path": "models\\classic-rl-latest.json"
+  },
+  "warm_start": {
+    "bc_loss": 0.4441436212539673,
+    "bc_accuracy": 0.824,
+    "bc_epochs": 4.0,
+    "games": 800.0,
+    "states": 40000.0,
+    "seconds": 67.25
+  },
+  "updates": [
+    {
+      "update": 1,
+      "games": 32,
+      "league_games": 12,
+      "mean_terminal_reward": 0.8300639730639731,
+      "mean_return": 0.6018280524294823,
+      "mean_score": 44.06060606060606,
+      "win_rate": 0.2222222222222222,
+      "success_rate": 0.010101010101010102,
+      "policy_loss": -0.011521032429300249,
+      "value_loss": 1.0925426371395588,
+      "entropy": 0.41720268689095974,
+      "grad_norm": 2.0657135605854973,
+      "decisions": 990,
+      "advantage_std": 0.8815308213233948,
+      "clip_fraction": 0.059673687359234236
+    },
+    {
+      "update": 2,
+      "games": 64,
+      "league_games": 28,
+      "mean_terminal_reward": 0.8666259689922483,
+      "mean_return": 0.6045576005708426,
+      "mean_score": 44.48837209302326,
+      "win_rate": 0.23255813953488372,
+      "success_rate": 0.03488372093023256,
+      "policy_loss": 0.0002750368439592421,
+      "value_loss": 1.127124559134245,
+      "entropy": 0.40902581065893173,
+      "grad_norm": 1.754571566313336,
+      "decisions": 860,
+      "advantage_std": 0.976938784122467,
+      "clip_fraction": 0.050048828125
+    },
+    {
+      "update": 3,
+      "games": 96,
+      "league_games": 46,
+      "mean_terminal_reward": 0.8577701149425287,
+      "mean_return": 0.7272345165256411,
+      "mean_score": 46.252873563218394,
+      "win_rate": 0.21839080459770116,
+      "success_rate": 0.05747126436781609,
+      "policy_loss": -0.012240795273100957,
+      "value_loss": 1.126104198396206,
+      "entropy": 0.3896960858255625,
+      "grad_norm": 1.3362203569818631,
+      "decisions": 870,
+      "advantage_std": 1.0141032934188843,
+      "clip_fraction": 0.0389715456495098
+    },
+    {
+      "update": 4,
+      "games": 128,
+      "league_games": 59,
+      "mean_terminal_reward": 0.9769480286738351,
+      "mean_return": 0.9353593830019236,
+      "mean_score": 44.98924731182796,
+      "win_rate": 0.27956989247311825,
+      "success_rate": 0.043010752688172046,
+      "policy_loss": -0.00607264437712729,
+      "value_loss": 1.0173038318753242,
+      "entropy": 0.38346684910357,
+      "grad_norm": 1.381297473995541,
+      "decisions": 930,
+      "advantage_std": 0.9627089500427246,
+      "clip_fraction": 0.060212311921296294
+    },
+    {
+      "update": 5,
+      "games": 160,
+      "league_games": 74,
+      "mean_terminal_reward": 0.9326996527777777,
+      "mean_return": 0.8289506293367594,
+      "mean_score": 46.291666666666664,
+      "win_rate": 0.2604166666666667,
+      "success_rate": 0.08333333333333333,
+      "policy_loss": -0.014307393634226173,
+      "value_loss": 1.0556836538016796,
+      "entropy": 0.4018101096153259,
+      "grad_norm": 0.9255782447184464,
+      "decisions": 960,
+      "advantage_std": 1.018465518951416,
+      "clip_fraction": 0.076171875
+    },
+    {
+      "update": 6,
+      "games": 192,
+      "league_games": 85,
+      "mean_terminal_reward": 0.9349124579124578,
+      "mean_return": 0.928754941560328,
+      "mean_score": 46.121212121212125,
+      "win_rate": 0.2727272727272727,
+      "success_rate": 0.050505050505050504,
+      "policy_loss": -0.00863261881750077,
+      "value_loss": 0.8960768468677998,
+      "entropy": 0.36793855018913746,
+      "grad_norm": 0.7718743295746597,
+      "decisions": 990,
+      "advantage_std": 0.9470717906951904,
+      "clip_fraction": 0.07052584811373874
+    },
+    {
+      "update": 7,
+      "games": 224,
+      "league_games": 99,
+      "mean_terminal_reward": 0.955412962962963,
+      "mean_return": 0.9122426072017333,
+      "mean_score": 44.21111111111111,
+      "win_rate": 0.3111111111111111,
+      "success_rate": 0.044444444444444446,
+      "policy_loss": -0.008262811810709536,
+      "value_loss": 0.8755422011017799,
+      "entropy": 0.3676166869699955,
+      "grad_norm": 0.7592376334346457,
+      "decisions": 900,
+      "advantage_std": 0.9409491419792175,
+      "clip_fraction": 0.08742453835227273
+    },
+    {
+      "update": 8,
+      "games": 256,
+      "league_games": 119,
+      "mean_terminal_reward": 1.0493818565400843,
+      "mean_return": 1.2469479152932763,
+      "mean_score": 49.0,
+      "win_rate": 0.2911392405063291,
+      "success_rate": 0.11392405063291139,
+      "policy_loss": -0.03650034742895514,
+      "value_loss": 1.093930710107088,
+      "entropy": 0.3198206163942814,
+      "grad_norm": 1.2042331033264673,
+      "decisions": 790,
+      "advantage_std": 1.0320771932601929,
+      "clip_fraction": 0.054487748579545456
+    },
+    {
+      "update": 9,
+      "games": 288,
+      "league_games": 134,
+      "mean_terminal_reward": 0.9416350877192984,
+      "mean_return": 1.0066902216058224,
+      "mean_score": 47.55789473684211,
+      "win_rate": 0.24210526315789474,
+      "success_rate": 0.05263157894736842,
+      "policy_loss": -0.0036369911103975028,
+      "value_loss": 0.9148048423230648,
+      "entropy": 0.3332597129046917,
+      "grad_norm": 0.7686856468525142,
+      "decisions": 950,
+      "advantage_std": 0.955435574054718,
+      "clip_fraction": 0.051859761332417584
+    },
+    {
+      "update": 10,
+      "games": 320,
+      "league_games": 149,
+      "mean_terminal_reward": 0.9593438596491229,
+      "mean_return": 0.9571304363198578,
+      "mean_score": 47.8,
+      "win_rate": 0.2631578947368421,
+      "success_rate": 0.08421052631578947,
+      "policy_loss": -0.0038653533556498587,
+      "value_loss": 0.9735024273395538,
+      "entropy": 0.3366138208657503,
+      "grad_norm": 0.7705164080000624,
+      "decisions": 950,
+      "advantage_std": 0.9884301424026489,
+      "clip_fraction": 0.04854910714285714
+    },
+    {
+      "update": 11,
+      "games": 352,
+      "league_games": 157,
+      "mean_terminal_reward": 0.9717227414330218,
+      "mean_return": 0.9907788198906928,
+      "mean_score": 47.10280373831776,
+      "win_rate": 0.2803738317757009,
+      "success_rate": 0.04672897196261682,
+      "policy_loss": -0.03780081826262176,
+      "value_loss": 0.8974011749029159,
+      "entropy": 0.3591858893632889,
+      "grad_norm": 0.988330173984593,
+      "decisions": 1070,
+      "advantage_std": 0.9409168362617493,
+      "clip_fraction": 0.04326596467391304
+    },
+    {
+      "update": 12,
+      "games": 384,
+      "league_games": 179,
+      "mean_terminal_reward": 0.9897272727272728,
+      "mean_return": 1.0846542657818645,
+      "mean_score": 48.701298701298704,
+      "win_rate": 0.2727272727272727,
+      "success_rate": 0.1038961038961039,
+      "policy_loss": 0.06661590619478375,
+      "value_loss": 0.8802187107503414,
+      "entropy": 0.33099897112697363,
+      "grad_norm": 1.9988986202344652,
+      "decisions": 770,
+      "advantage_std": 0.9631549119949341,
+      "clip_fraction": 0.04541015625
+    },
+    {
+      "update": 13,
+      "games": 416,
+      "league_games": 194,
+      "mean_terminal_reward": 1.0494945054945055,
+      "mean_return": 1.0848911018110812,
+      "mean_score": 49.472527472527474,
+      "win_rate": 0.34065934065934067,
+      "success_rate": 0.0989010989010989,
+      "policy_loss": 0.0005418140208348632,
+      "value_loss": 0.9737312197685242,
+      "entropy": 0.3088221363723278,
+      "grad_norm": 0.7208317781404175,
+      "decisions": 910,
+      "advantage_std": 0.9889234900474548,
+      "clip_fraction": 0.030968034771126765
+    },
+    {
+      "update": 14,
+      "games": 448,
+      "league_games": 211,
+      "mean_terminal_reward": 1.0173100775193797,
+      "mean_return": 1.073076318949461,
+      "mean_score": 49.116279069767444,
+      "win_rate": 0.26744186046511625,
+      "success_rate": 0.08139534883720931,
+      "policy_loss": -0.0014070005636312999,
+      "value_loss": 0.8642383851110935,
+      "entropy": 0.32040595822036266,
+      "grad_norm": 0.7542519862545138,
+      "decisions": 860,
+      "advantage_std": 0.938965380191803,
+      "clip_fraction": 0.051534901494565216
+    },
+    {
+      "update": 15,
+      "games": 480,
+      "league_games": 228,
+      "mean_terminal_reward": 0.9612619047619047,
+      "mean_return": 1.0195618721991195,
+      "mean_score": 47.956043956043956,
+      "win_rate": 0.27472527472527475,
+      "success_rate": 0.07692307692307693,
+      "policy_loss": -0.01136863324791193,
+      "value_loss": 0.9149902798235416,
+      "entropy": 0.34148680604994297,
+      "grad_norm": 0.7958983795667873,
+      "decisions": 910,
+      "advantage_std": 0.9564007520675659,
+      "clip_fraction": 0.042208819322183094
+    },
+    {
+      "update": 16,
+      "games": 512,
+      "league_games": 244,
+      "mean_terminal_reward": 1.0209249084249084,
+      "mean_return": 1.1117912959307432,
+      "mean_score": 49.1978021978022,
+      "win_rate": 0.27472527472527475,
+      "success_rate": 0.0989010989010989,
+      "policy_loss": -0.01258744834922254,
+      "value_loss": 0.9942746013402939,
+      "entropy": 0.33349973522126675,
+      "grad_norm": 0.7247934270095124,
+      "decisions": 910,
+      "advantage_std": 0.994037389755249,
+      "clip_fraction": 0.04069583516725352
+    },
+    {
+      "update": 17,
+      "games": 544,
+      "league_games": 259,
+      "mean_terminal_reward": 1.0491296296296297,
+      "mean_return": 1.0498958923853934,
+      "mean_score": 51.24444444444445,
+      "win_rate": 0.2777777777777778,
+      "success_rate": 0.13333333333333333,
+      "policy_loss": -0.003238702585804276,
+      "value_loss": 1.0145067013800144,
+      "entropy": 0.3308270815759897,
+      "grad_norm": 0.6865061889018276,
+      "decisions": 900,
+      "advantage_std": 1.0100679397583008,
+      "clip_fraction": 0.046845407196969696
+    },
+    {
+      "update": 18,
+      "games": 576,
+      "league_games": 279,
+      "mean_terminal_reward": 1.0357311111111114,
+      "mean_return": 1.2128879223018885,
+      "mean_score": 51.29333333333334,
+      "win_rate": 0.28,
+      "success_rate": 0.08,
+      "policy_loss": -0.004945981704319517,
+      "value_loss": 0.8556007544199625,
+      "entropy": 0.29569942752520245,
+      "grad_norm": 0.6378481502203596,
+      "decisions": 750,
+      "advantage_std": 0.9258159399032593,
+      "clip_fraction": 0.044826133578431376
+    },
+    {
+      "update": 19,
+      "games": 608,
+      "league_games": 299,
+      "mean_terminal_reward": 1.0195812499999999,
+      "mean_return": 1.0824685376137495,
+      "mean_score": 50.1375,
+      "win_rate": 0.275,
+      "success_rate": 0.1,
+      "policy_loss": -0.02885398018406704,
+      "value_loss": 0.9034982025623322,
+      "entropy": 0.2932419218122959,
+      "grad_norm": 1.0314555753101387,
+      "decisions": 800,
+      "advantage_std": 0.9519650340080261,
+      "clip_fraction": 0.093017578125
+    },
+    {
+      "update": 20,
+      "games": 640,
+      "league_games": 316,
+      "mean_terminal_reward": 1.0826192439862545,
+      "mean_return": 1.219209455884993,
+      "mean_score": 51.8041237113402,
+      "win_rate": 0.30927835051546393,
+      "success_rate": 0.1134020618556701,
+      "policy_loss": -0.004397198150400072,
+      "value_loss": 1.027127992361784,
+      "entropy": 0.31320089660584927,
+      "grad_norm": 0.6949809080737048,
+      "decisions": 970,
+      "advantage_std": 1.0136384963989258,
+      "clip_fraction": 0.020283009746287127
+    },
+    {
+      "update": 21,
+      "games": 672,
+      "league_games": 331,
+      "mean_terminal_reward": 1.046433024691358,
+      "mean_return": 1.1688026008196175,
+      "mean_score": 53.27777777777778,
+      "win_rate": 0.25,
+      "success_rate": 0.17592592592592593,
+      "policy_loss": -0.00021580935863312333,
+      "value_loss": 1.205194926261902,
+      "entropy": 0.3073100924491882,
+      "grad_norm": 0.8342155158994601,
+      "decisions": 1080,
+      "advantage_std": 1.0913336277008057,
+      "clip_fraction": 0.04603794642857143
+    },
+    {
+      "update": 22,
+      "games": 704,
+      "league_games": 343,
+      "mean_terminal_reward": 1.0081871559633027,
+      "mean_return": 1.0228132648626342,
+      "mean_score": 52.75229357798165,
+      "win_rate": 0.24770642201834864,
+      "success_rate": 0.1926605504587156,
+      "policy_loss": 0.000826966529712081,
+      "value_loss": 0.960903662443161,
+      "entropy": 0.2929294556379318,
+      "grad_norm": 0.8299679281806164,
+      "decisions": 1090,
+      "advantage_std": 0.9801673889160156,
+      "clip_fraction": 0.049840198863636366
+    },
+    {
+      "update": 23,
+      "games": 736,
+      "league_games": 355,
+      "mean_terminal_reward": 1.01150462962963,
+      "mean_return": 1.0430122668622062,
+      "mean_score": 52.75925925925926,
+      "win_rate": 0.24074074074074073,
+      "success_rate": 0.1574074074074074,
+      "policy_loss": -0.00797615312039852,
+      "value_loss": 0.9832174688577652,
+      "entropy": 0.29467782005667686,
+      "grad_norm": 0.7601761531117404,
+      "decisions": 1080,
+      "advantage_std": 0.9963250160217285,
+      "clip_fraction": 0.04676339285714286
+    },
+    {
+      "update": 24,
+      "games": 768,
+      "league_games": 371,
+      "mean_terminal_reward": 1.1065366336633664,
+      "mean_return": 1.1861160229891539,
+      "mean_score": 54.396039603960396,
+      "win_rate": 0.26732673267326734,
+      "success_rate": 0.24752475247524752,
+      "policy_loss": -0.0057921640400309116,
+      "value_loss": 1.1347400173544884,
+      "entropy": 0.30136323161423206,
+      "grad_norm": 0.7340865657684958,
+      "decisions": 1010,
+      "advantage_std": 1.0631434917449951,
+      "clip_fraction": 0.024391867897727272
+    },
+    {
+      "update": 25,
+      "games": 800,
+      "league_games": 384,
+      "mean_terminal_reward": 0.9994064327485379,
+      "mean_return": 1.1018278589472175,
+      "mean_score": 52.780701754385966,
+      "win_rate": 0.24561403508771928,
+      "success_rate": 0.14035087719298245,
+      "policy_loss": -0.004939024453051388,
+      "value_loss": 1.0995726227760314,
+      "entropy": 0.3249214291572571,
+      "grad_norm": 0.8323342104420177,
+      "decisions": 1140,
+      "advantage_std": 1.051999807357788,
+      "clip_fraction": 0.022164601293103447
+    },
+    {
+      "update": 26,
+      "games": 832,
+      "league_games": 401,
+      "mean_terminal_reward": 1.0787279569892474,
+      "mean_return": 1.1458310227608308,
+      "mean_score": 52.75268817204301,
+      "win_rate": 0.3118279569892473,
+      "success_rate": 0.11827956989247312,
+      "policy_loss": -0.012108018971048295,
+      "value_loss": 1.0017311163246632,
+      "entropy": 0.3080953750759363,
+      "grad_norm": 0.7874693973004696,
+      "decisions": 930,
+      "advantage_std": 0.996862530708313,
+      "clip_fraction": 0.03680796682098765
+    },
+    {
+      "update": 27,
+      "games": 864,
+      "league_games": 419,
+      "mean_terminal_reward": 1.0872794326241135,
+      "mean_return": 1.210149360820651,
+      "mean_score": 53.755319148936174,
+      "win_rate": 0.2765957446808511,
+      "success_rate": 0.20212765957446807,
+      "policy_loss": -0.002806063857860863,
+      "value_loss": 1.1014355346560478,
+      "entropy": 0.31062838062644005,
+      "grad_norm": 0.73765479550536,
+      "decisions": 940,
+      "advantage_std": 1.050783634185791,
+      "clip_fraction": 0.03932935138081395
+    },
+    {
+      "update": 28,
+      "games": 896,
+      "league_games": 436,
+      "mean_terminal_reward": 1.0176141843971633,
+      "mean_return": 1.1033907844685018,
+      "mean_score": 52.11702127659574,
+      "win_rate": 0.26595744680851063,
+      "success_rate": 0.11702127659574468,
+      "policy_loss": -0.007164282789744902,
+      "value_loss": 1.0170907974243164,
+      "entropy": 0.3390864934772253,
+      "grad_norm": 0.7046891370735376,
+      "decisions": 940,
+      "advantage_std": 1.0077013969421387,
+      "clip_fraction": 0.042389625726744186
+    },
+    {
+      "update": 29,
+      "games": 928,
+      "league_games": 451,
+      "mean_terminal_reward": 1.027357522123894,
+      "mean_return": 1.1147369854152203,
+      "mean_score": 53.29203539823009,
+      "win_rate": 0.25663716814159293,
+      "success_rate": 0.12389380530973451,
+      "policy_loss": -0.009736925549805164,
+      "value_loss": 1.00243481695652,
+      "entropy": 0.3227286458015442,
+      "grad_norm": 0.7049803453026801,
+      "decisions": 1130,
+      "advantage_std": 1.001296877861023,
+      "clip_fraction": 0.04603847287735849
+    },
+    {
+      "update": 30,
+      "games": 960,
+      "league_games": 466,
+      "mean_terminal_reward": 1.0283261904761904,
+      "mean_return": 1.0962627287954092,
+      "mean_score": 53.25,
+      "win_rate": 0.24107142857142858,
+      "success_rate": 0.20535714285714285,
+      "policy_loss": -0.016503180359723046,
+      "value_loss": 0.942466989159584,
+      "entropy": 0.3337410897016525,
+      "grad_norm": 0.7476261101339621,
+      "decisions": 1120,
+      "advantage_std": 0.9678142070770264,
+      "clip_fraction": 0.06510416666666667
+    },
+    {
+      "update": 31,
+      "games": 992,
+      "league_games": 477,
+      "mean_terminal_reward": 0.9891723646723646,
+      "mean_return": 1.020008658990264,
+      "mean_score": 52.15384615384615,
+      "win_rate": 0.24786324786324787,
+      "success_rate": 0.13675213675213677,
+      "policy_loss": -0.003741128835827112,
+      "value_loss": 0.9248114049434661,
+      "entropy": 0.3436297535896301,
+      "grad_norm": 0.8326241433586109,
+      "decisions": 1170,
+      "advantage_std": 0.9612197875976562,
+      "clip_fraction": 0.03502782534246575
+    },
+    {
+      "update": 32,
+      "games": 1024,
+      "league_games": 496,
+      "mean_terminal_reward": 1.0430745704467355,
+      "mean_return": 1.1133804190903902,
+      "mean_score": 53.134020618556704,
+      "win_rate": 0.24742268041237114,
+      "success_rate": 0.1958762886597938,
+      "policy_loss": -0.010469282628037035,
+      "value_loss": 1.0213920511305332,
+      "entropy": 0.33120109885931015,
+      "grad_norm": 0.7095926669459434,
+      "decisions": 970,
+      "advantage_std": 1.0095795392990112,
+      "clip_fraction": 0.07439279084158415
+    },
+    {
+      "update": 33,
+      "games": 1056,
+      "league_games": 508,
+      "mean_terminal_reward": 0.9645208333333334,
+      "mean_return": 1.0127870324067771,
+      "mean_score": 52.964285714285715,
+      "win_rate": 0.23214285714285715,
+      "success_rate": 0.125,
+      "policy_loss": 0.003114250907674432,
+      "value_loss": 0.8152407675981521,
+      "entropy": 0.3302803605794907,
+      "grad_norm": 0.8327239498502964,
+      "decisions": 1120,
+      "advantage_std": 0.903877317905426,
+      "clip_fraction": 0.014778645833333331
+    },
+    {
+      "update": 34,
+      "games": 1088,
+      "league_games": 524,
+      "mean_terminal_reward": 0.9674905228758172,
+      "mean_return": 1.0775379873812199,
+      "mean_score": 53.73529411764706,
+      "win_rate": 0.23529411764705882,
+      "success_rate": 0.11764705882352941,
+      "policy_loss": -0.0050033306470140815,
+      "value_loss": 1.1244036108255386,
+      "entropy": 0.3258459735661745,
+      "grad_norm": 0.6674019566588703,
+      "decisions": 1020,
+      "advantage_std": 1.06239914894104,
+      "clip_fraction": 0.01912047371031746
+    },
+    {
+      "update": 35,
+      "games": 1120,
+      "league_games": 541,
+      "mean_terminal_reward": 1.1032908771929826,
+      "mean_return": 1.18725750525482,
+      "mean_score": 53.1578947368421,
+      "win_rate": 0.30526315789473685,
+      "success_rate": 0.15789473684210525,
+      "policy_loss": -0.00411728116159793,
+      "value_loss": 0.9843768067657948,
+      "entropy": 0.311620170250535,
+      "grad_norm": 0.8172615352673752,
+      "decisions": 950,
+      "advantage_std": 0.9868515729904175,
+      "clip_fraction": 0.036723042582417584
+    },
+    {
+      "update": 36,
+      "games": 1152,
+      "league_games": 552,
+      "mean_terminal_reward": 0.9628626016260164,
+      "mean_return": 1.035308912396431,
+      "mean_score": 52.34146341463415,
+      "win_rate": 0.23577235772357724,
+      "success_rate": 0.08943089430894309,
+      "policy_loss": -0.00760868932120502,
+      "value_loss": 0.9051912486553192,
+      "entropy": 0.33222674429416654,
+      "grad_norm": 0.7405694075555006,
+      "decisions": 1230,
+      "advantage_std": 0.9476346969604492,
+      "clip_fraction": 0.0354956765776699
+    },
+    {
+      "update": 37,
+      "games": 1184,
+      "league_games": 567,
+      "mean_terminal_reward": 0.9073562691131499,
+      "mean_return": 0.937106131343171,
+      "mean_score": 52.24770642201835,
+      "win_rate": 0.1926605504587156,
+      "success_rate": 0.10091743119266056,
+      "policy_loss": -0.020470844721421598,
+      "value_loss": 0.7991045027971267,
+      "entropy": 0.3401252508163452,
+      "grad_norm": 0.7459112010699364,
+      "decisions": 1090,
+      "advantage_std": 0.8891024589538574,
+      "clip_fraction": 0.029131155303030298
+    },
+    {
+      "update": 38,
+      "games": 1216,
+      "league_games": 585,
+      "mean_terminal_reward": 1.0561333333333334,
+      "mean_return": 1.1850094934925437,
+      "mean_score": 53.13333333333333,
+      "win_rate": 0.25555555555555554,
+      "success_rate": 0.16666666666666666,
+      "policy_loss": -0.00732859643176198,
+      "value_loss": 1.0266500748693943,
+      "entropy": 0.3270048275589943,
+      "grad_norm": 0.864285068306822,
+      "decisions": 900,
+      "advantage_std": 1.016873836517334,
+      "clip_fraction": 0.026833274147727272
+    },
+    {
+      "update": 39,
+      "games": 1248,
+      "league_games": 600,
+      "mean_terminal_reward": 0.9810993333333334,
+      "mean_return": 1.0370822348631918,
+      "mean_score": 52.36,
+      "win_rate": 0.25,
+      "success_rate": 0.18,
+      "policy_loss": -0.005368362919398351,
+      "value_loss": 0.8701841086149216,
+      "entropy": 0.32094413228332996,
+      "grad_norm": 0.7685867080364781,
+      "decisions": 1000,
+      "advantage_std": 0.9309594035148621,
+      "clip_fraction": 0.03364931303879311
+    },
+    {
+      "update": 40,
+      "games": 1280,
+      "league_games": 614,
+      "mean_terminal_reward": 0.9482563421828908,
+      "mean_return": 0.9875426441431046,
+      "mean_score": 51.80530973451327,
+      "win_rate": 0.22123893805309736,
+      "success_rate": 0.09734513274336283,
+      "policy_loss": -0.0031131564639508722,
+      "value_loss": 0.8846126019954681,
+      "entropy": 0.3543448507785797,
+      "grad_norm": 0.6770793111661291,
+      "decisions": 1130,
+      "advantage_std": 0.9451114535331726,
+      "clip_fraction": 0.055966244103773585
+    },
+    {
+      "update": 41,
+      "games": 1312,
+      "league_games": 623,
+      "mean_terminal_reward": 0.9573250591016549,
+      "mean_return": 1.0158177828416228,
+      "mean_score": 52.829787234042556,
+      "win_rate": 0.2198581560283688,
+      "success_rate": 0.1347517730496454,
+      "policy_loss": -0.004322785651311278,
+      "value_loss": 0.928748053809007,
+      "entropy": 0.3559986837208271,
+      "grad_norm": 0.7115471590082482,
+      "decisions": 1410,
+      "advantage_std": 0.9697312712669373,
+      "clip_fraction": 0.05955779246794871
+    },
+    {
+      "update": 42,
+      "games": 1344,
+      "league_games": 641,
+      "mean_terminal_reward": 0.9362003030303029,
+      "mean_return": 0.9809107538312674,
+      "mean_score": 53.236363636363635,
+      "win_rate": 0.2,
+      "success_rate": 0.14545454545454545,
+      "policy_loss": -0.020461199432611467,
+      "value_loss": 0.8660176515579223,
+      "entropy": 0.3542788028717041,
+      "grad_norm": 0.8036733417339358,
+      "decisions": 1100,
+      "advantage_std": 0.9202020764350891,
+      "clip_fraction": 0.030818256578947368
+    },
+    {
+      "update": 43,
+      "games": 1376,
+      "league_games": 655,
+      "mean_terminal_reward": 0.9217641873278237,
+      "mean_return": 0.9638418820686638,
+      "mean_score": 51.925619834710744,
+      "win_rate": 0.21487603305785125,
+      "success_rate": 0.08264462809917356,
+      "policy_loss": -0.005524745769798755,
+      "value_loss": 0.7912701845169068,
+      "entropy": 0.3588917374610901,
+      "grad_norm": 0.6974161875369872,
+      "decisions": 1210,
+      "advantage_std": 0.8919361233711243,
+      "clip_fraction": 0.040681703629032256
+    },
+    {
+      "update": 44,
+      "games": 1408,
+      "league_games": 670,
+      "mean_terminal_reward": 0.9578081081081081,
+      "mean_return": 0.9807645324617624,
+      "mean_score": 52.630630630630634,
+      "win_rate": 0.21621621621621623,
+      "success_rate": 0.13513513513513514,
+      "policy_loss": -0.007776785362511873,
+      "value_loss": 0.9497629851102829,
+      "entropy": 0.3178026981651783,
+      "grad_norm": 0.7196143828502066,
+      "decisions": 1110,
+      "advantage_std": 0.9718249440193176,
+      "clip_fraction": 0.037018531976744186
+    },
+    {
+      "update": 45,
+      "games": 1440,
+      "league_games": 686,
+      "mean_terminal_reward": 0.9688353846153848,
+      "mean_return": 1.051108472282067,
+      "mean_score": 53.53076923076923,
+      "win_rate": 0.2153846153846154,
+      "success_rate": 0.13846153846153847,
+      "policy_loss": -0.013407132976378003,
+      "value_loss": 0.8312195390462875,
+      "entropy": 0.31010984629392624,
+      "grad_norm": 0.876596548907744,
+      "decisions": 1300,
+      "advantage_std": 0.9136589765548706,
+      "clip_fraction": 0.0443359375
+    },
+    {
+      "update": 46,
+      "games": 1472,
+      "league_games": 703,
+      "mean_terminal_reward": 0.9883780780780781,
+      "mean_return": 1.1349748596549034,
+      "mean_score": 53.270270270270274,
+      "win_rate": 0.24324324324324326,
+      "success_rate": 0.12612612612612611,
+      "policy_loss": -0.00863303653895855,
+      "value_loss": 0.8812898993492126,
+      "entropy": 0.30938936695456504,
+      "grad_norm": 0.7391579114892612,
+      "decisions": 1110,
+      "advantage_std": 0.9362289905548096,
+      "clip_fraction": 0.03235828488372093
+    },
+    {
+      "update": 47,
+      "games": 1504,
+      "league_games": 717,
+      "mean_terminal_reward": 0.990167741935484,
+      "mean_return": 1.0574627046880778,
+      "mean_score": 52.403225806451616,
+      "win_rate": 0.24193548387096775,
+      "success_rate": 0.14516129032258066,
+      "policy_loss": -0.006003073859028518,
+      "value_loss": 0.8576347649097442,
+      "entropy": 0.31696117520332334,
+      "grad_norm": 0.6670608470084364,
+      "decisions": 1240,
+      "advantage_std": 0.9271714687347412,
+      "clip_fraction": 0.028855613425925925
+    },
+    {
+      "update": 48,
+      "games": 1536,
+      "league_games": 737,
+      "mean_terminal_reward": 1.0569660194174757,
+      "mean_return": 1.3073718817904592,
+      "mean_score": 51.77669902912621,
+      "win_rate": 0.27184466019417475,
+      "success_rate": 0.0970873786407767,
+      "policy_loss": 0.03664397259708494,
+      "value_loss": 0.8794023215770721,
+      "entropy": 0.30995517410337925,
+      "grad_norm": 1.1744496652518455,
+      "decisions": 1030,
+      "advantage_std": 0.9490035772323608,
+      "clip_fraction": 0.043359375
+    },
+    {
+      "update": 49,
+      "games": 1568,
+      "league_games": 751,
+      "mean_terminal_reward": 0.9187772222222222,
+      "mean_return": 0.9666052033135202,
+      "mean_score": 52.80833333333333,
+      "win_rate": 0.20833333333333334,
+      "success_rate": 0.14166666666666666,
+      "policy_loss": -0.003769070561975241,
+      "value_loss": 0.8903556883335113,
+      "entropy": 0.3075312957167625,
+      "grad_norm": 0.7885787547406269,
+      "decisions": 1200,
+      "advantage_std": 0.9419594407081604,
+      "clip_fraction": 0.0673650568181818
+    },
+    {
+      "update": 50,
+      "games": 1600,
+      "league_games": 773,
+      "mean_terminal_reward": 0.9816020618556701,
+      "mean_return": 0.9954129506604659,
+      "mean_score": 52.72164948453608,
+      "win_rate": 0.23711340206185566,
+      "success_rate": 0.16494845360824742,
+      "policy_loss": -0.008211961074266583,
+      "value_loss": 0.8529377058148384,
+      "entropy": 0.3160329032689333,
+      "grad_norm": 0.8036964860411491,
+      "decisions": 970,
+      "advantage_std": 0.9226732850074768,
+      "clip_fraction": 0.030244430693069306
+    },
+    {
+      "update": 51,
+      "games": 1632,
+      "league_games": 786,
+      "mean_terminal_reward": 0.9154588888888889,
+      "mean_return": 0.9105857850518078,
+      "mean_score": 52.675,
+      "win_rate": 0.19166666666666668,
+      "success_rate": 0.125,
+      "policy_loss": -0.007113949954509735,
+      "value_loss": 0.8895612448453903,
+      "entropy": 0.3097284086048603,
+      "grad_norm": 0.7056326754225756,
+      "decisions": 1200,
+      "advantage_std": 0.941326379776001,
+      "clip_fraction": 0.024431818181818183
+    },
+    {
+      "update": 52,
+      "games": 1664,
+      "league_games": 807,
+      "mean_terminal_reward": 1.0246236245954694,
+      "mean_return": 1.1452679219655693,
+      "mean_score": 53.89320388349515,
+      "win_rate": 0.2524271844660194,
+      "success_rate": 0.17475728155339806,
+      "policy_loss": 0.041643703868612644,
+      "value_loss": 0.8061197333037853,
+      "entropy": 0.3184760682284832,
+      "grad_norm": 1.3726936666762222,
+      "decisions": 1030,
+      "advantage_std": 0.9170700311660767,
+      "clip_fraction": 0.04479166666666666
+    },
+    {
+      "update": 53,
+      "games": 1696,
+      "league_games": 820,
+      "mean_terminal_reward": 1.0097891737891738,
+      "mean_return": 1.1648204466328025,
+      "mean_score": 52.666666666666664,
+      "win_rate": 0.2564102564102564,
+      "success_rate": 0.09401709401709402,
+      "policy_loss": -0.008474984299391508,
+      "value_loss": 0.9452559441328049,
+      "entropy": 0.2915619194507599,
+      "grad_norm": 0.7160049783925,
+      "decisions": 1170,
+      "advantage_std": 0.9720920920372009,
+      "clip_fraction": 0.060675299657534244
+    },
+    {
+      "update": 54,
+      "games": 1728,
+      "league_games": 837,
+      "mean_terminal_reward": 0.9788515151515151,
+      "mean_return": 1.120487959124148,
+      "mean_score": 52.27272727272727,
+      "win_rate": 0.23140495867768596,
+      "success_rate": 0.11570247933884298,
+      "policy_loss": -0.0063232169952243565,
+      "value_loss": 0.8699572205543518,
+      "entropy": 0.33826120048761366,
+      "grad_norm": 0.7143141047671386,
+      "decisions": 1210,
+      "advantage_std": 0.9316924810409546,
+      "clip_fraction": 0.04163516465053763
+    },
+    {
+      "update": 55,
+      "games": 1760,
+      "league_games": 847,
+      "mean_terminal_reward": 1.0270822222222222,
+      "mean_return": 1.0855711568146944,
+      "mean_score": 52.93333333333333,
+      "win_rate": 0.25833333333333336,
+      "success_rate": 0.15833333333333333,
+      "policy_loss": -0.006829243805259466,
+      "value_loss": 1.0421085804700851,
+      "entropy": 0.2915607661008835,
+      "grad_norm": 0.7068679812966765,
+      "decisions": 1200,
+      "advantage_std": 1.0183606147766113,
+      "clip_fraction": 0.029971590909090906
+    },
+    {
+      "update": 56,
+      "games": 1792,
+      "league_games": 862,
+      "mean_terminal_reward": 0.988123563218391,
+      "mean_return": 1.0294670229777694,
+      "mean_score": 54.53448275862069,
+      "win_rate": 0.22413793103448276,
+      "success_rate": 0.19827586206896552,
+      "policy_loss": -0.007776237116195262,
+      "value_loss": 1.0303082823753358,
+      "entropy": 0.2891066774725914,
+      "grad_norm": 0.683808837442424,
+      "decisions": 1160,
+      "advantage_std": 1.0105470418930054,
+      "clip_fraction": 0.04896599264705882
+    },
+    {
+      "update": 57,
+      "games": 1824,
+      "league_games": 873,
+      "mean_terminal_reward": 0.930532603406326,
+      "mean_return": 0.9038595834863372,
+      "mean_score": 53.934306569343065,
+      "win_rate": 0.19708029197080293,
+      "success_rate": 0.15328467153284672,
+      "policy_loss": -0.009269906634775301,
+      "value_loss": 1.0122522115707397,
+      "entropy": 0.2866987219701211,
+      "grad_norm": 0.7777371084796735,
+      "decisions": 1370,
+      "advantage_std": 1.0113017559051514,
+      "clip_fraction": 0.056470630787037034
+    },
+    {
+      "update": 58,
+      "games": 1856,
+      "league_games": 891,
+      "mean_terminal_reward": 0.990703144654088,
+      "mean_return": 1.0649816384539008,
+      "mean_score": 53.37735849056604,
+      "win_rate": 0.25471698113207547,
+      "success_rate": 0.11320754716981132,
+      "policy_loss": -0.006835346342995763,
+      "value_loss": 0.917130070924759,
+      "entropy": 0.30008549988269806,
+      "grad_norm": 0.8418011578231848,
+      "decisions": 1060,
+      "advantage_std": 0.9579541683197021,
+      "clip_fraction": 0.025716145833333332
+    },
+    {
+      "update": 59,
+      "games": 1888,
+      "league_games": 906,
+      "mean_terminal_reward": 0.993625,
+      "mean_return": 1.0916407704353333,
+      "mean_score": 54.49166666666667,
+      "win_rate": 0.21666666666666667,
+      "success_rate": 0.15833333333333333,
+      "policy_loss": -0.008944007614627481,
+      "value_loss": 0.9415178447961807,
+      "entropy": 0.2736213803291321,
+      "grad_norm": 0.6609864679723493,
+      "decisions": 1200,
+      "advantage_std": 0.970756471157074,
+      "clip_fraction": 0.06340553977272727
+    },
+    {
+      "update": 60,
+      "games": 1920,
+      "league_games": 925,
+      "mean_terminal_reward": 0.9698794642857143,
+      "mean_return": 1.1471734875813127,
+      "mean_score": 54.0625,
+      "win_rate": 0.22321428571428573,
+      "success_rate": 0.11607142857142858,
+      "policy_loss": -0.013498414680361748,
+      "value_loss": 0.928935369849205,
+      "entropy": 0.2811272419989109,
+      "grad_norm": 0.7415790409732252,
+      "decisions": 1120,
+      "advantage_std": 0.9623552560806274,
+      "clip_fraction": 0.031119791666666667
+    },
+    {
+      "update": 61,
+      "games": 1952,
+      "league_games": 942,
+      "mean_terminal_reward": 1.1018281345565748,
+      "mean_return": 1.2798092290759087,
+      "mean_score": 54.862385321100916,
+      "win_rate": 0.28440366972477066,
+      "success_rate": 0.22935779816513763,
+      "policy_loss": 0.0025947531685233116,
+      "value_loss": 0.9721750855445862,
+      "entropy": 0.29335598424077036,
+      "grad_norm": 0.8707782773911912,
+      "decisions": 1090,
+      "advantage_std": 0.9855385422706604,
+      "clip_fraction": 0.038973721590909095
+    },
+    {
+      "update": 62,
+      "games": 1984,
+      "league_games": 956,
+      "mean_terminal_reward": 1.0365485333333333,
+      "mean_return": 1.2214207611978054,
+      "mean_score": 54.376,
+      "win_rate": 0.256,
+      "success_rate": 0.184,
+      "policy_loss": -0.0054126603994518515,
+      "value_loss": 0.9529849350452423,
+      "entropy": 0.28001879155635834,
+      "grad_norm": 0.7709659526710662,
+      "decisions": 1250,
+      "advantage_std": 0.9785799980163574,
+      "clip_fraction": 0.03388931139380531
+    },
+    {
+      "update": 63,
+      "games": 2016,
+      "league_games": 970,
+      "mean_terminal_reward": 0.9685505555555556,
+      "mean_return": 1.0217144936323166,
+      "mean_score": 54.18333333333333,
+      "win_rate": 0.225,
+      "success_rate": 0.175,
+      "policy_loss": -0.0035734840668737887,
+      "value_loss": 0.9634946614503861,
+      "entropy": 0.2757344678044319,
+      "grad_norm": 0.7858871831341172,
+      "decisions": 1200,
+      "advantage_std": 0.9804096221923828,
+      "clip_fraction": 0.036168323863636366
+    },
+    {
+      "update": 64,
+      "games": 2048,
+      "league_games": 990,
+      "mean_terminal_reward": 1.036354575163399,
+      "mean_return": 1.1083492264151573,
+      "mean_score": 54.65686274509804,
+      "win_rate": 0.21568627450980393,
+      "success_rate": 0.20588235294117646,
+      "policy_loss": -0.0034515404258854687,
+      "value_loss": 0.8776871263980865,
+      "entropy": 0.25309425778687,
+      "grad_norm": 0.6522967706171864,
+      "decisions": 1020,
+      "advantage_std": 0.9401196837425232,
+      "clip_fraction": 0.017907521081349208
+    },
+    {
+      "update": 65,
+      "games": 2080,
+      "league_games": 1005,
+      "mean_terminal_reward": 1.033598148148148,
+      "mean_return": 1.158008098602295,
+      "mean_score": 54.00925925925926,
+      "win_rate": 0.25,
+      "success_rate": 0.1574074074074074,
+      "policy_loss": -0.0075263319537043575,
+      "value_loss": 0.8551802039146423,
+      "entropy": 0.2609557196497917,
+      "grad_norm": 0.8728789961589166,
+      "decisions": 1080,
+      "advantage_std": 0.9300954341888428,
+      "clip_fraction": 0.037109375
+    },
+    {
+      "update": 66,
+      "games": 2112,
+      "league_games": 1019,
+      "mean_terminal_reward": 1.079697150997151,
+      "mean_return": 1.1672054575756192,
+      "mean_score": 54.8034188034188,
+      "win_rate": 0.27350427350427353,
+      "success_rate": 0.20512820512820512,
+      "policy_loss": -0.0026528610615059733,
+      "value_loss": 1.053369900584221,
+      "entropy": 0.28782435581088067,
+      "grad_norm": 0.7748579808806103,
+      "decisions": 1170,
+      "advantage_std": 1.0273605585098267,
+      "clip_fraction": 0.026032748287671235
+    },
+    {
+      "update": 67,
+      "games": 2144,
+      "league_games": 1035,
+      "mean_terminal_reward": 1.0439140672782876,
+      "mean_return": 1.1256075063720345,
+      "mean_score": 54.11009174311926,
+      "win_rate": 0.24770642201834864,
+      "success_rate": 0.21100917431192662,
+      "policy_loss": -0.019745960546424614,
+      "value_loss": 1.0053550481796265,
+      "entropy": 0.25532003194093705,
+      "grad_norm": 0.8606168401877106,
+      "decisions": 1090,
+      "advantage_std": 1.0018336772918701,
+      "clip_fraction": 0.019998816287878786
+    },
+    {
+      "update": 68,
+      "games": 2176,
+      "league_games": 1055,
+      "mean_terminal_reward": 0.9697822006472493,
+      "mean_return": 1.0553290040697902,
+      "mean_score": 53.74757281553398,
+      "win_rate": 0.2524271844660194,
+      "success_rate": 0.1262135922330097,
+      "policy_loss": -0.03996356390416622,
+      "value_loss": 0.936977869272232,
+      "entropy": 0.2738539852201939,
+      "grad_norm": 2.0706831313781415,
+      "decisions": 1030,
+      "advantage_std": 0.910307765007019,
+      "clip_fraction": 0.06529947916666666
+    },
+    {
+      "update": 69,
+      "games": 2208,
+      "league_games": 1069,
+      "mean_terminal_reward": 1.0036733870967744,
+      "mean_return": 1.109645497519523,
+      "mean_score": 54.66129032258065,
+      "win_rate": 0.24193548387096775,
+      "success_rate": 0.1774193548387097,
+      "policy_loss": -0.004706426756456494,
+      "value_loss": 0.8775562226772309,
+      "entropy": 0.24733660295605658,
+      "grad_norm": 0.6772770276340165,
+      "decisions": 1240,
+      "advantage_std": 0.941667914390564,
+      "clip_fraction": 0.03176359953703704
+    },
+    {
+      "update": 70,
+      "games": 2240,
+      "league_games": 1082,
+      "mean_terminal_reward": 1.021871505376344,
+      "mean_return": 1.2218348607420921,
+      "mean_score": 53.983870967741936,
+      "win_rate": 0.25806451612903225,
+      "success_rate": 0.13709677419354838,
+      "policy_loss": -0.0037832027301192284,
+      "value_loss": 0.8973639726638794,
+      "entropy": 0.2925350569188595,
+      "grad_norm": 0.67068725426862,
+      "decisions": 1240,
+      "advantage_std": 0.9507577419281006,
+      "clip_fraction": 0.035698784722222224
+    },
+    {
+      "update": 71,
+      "games": 2272,
+      "league_games": 1095,
+      "mean_terminal_reward": 0.9840866161616163,
+      "mean_return": 1.0417421460151672,
+      "mean_score": 54.63636363636363,
+      "win_rate": 0.21212121212121213,
+      "success_rate": 0.23484848484848486,
+      "policy_loss": -0.016635782124164205,
+      "value_loss": 1.016558515528838,
+      "entropy": 0.26214866029719514,
+      "grad_norm": 0.7955793220812799,
+      "decisions": 1320,
+      "advantage_std": 1.0166548490524292,
+      "clip_fraction": 0.07112630208333333
+    },
+    {
+      "update": 72,
+      "games": 2304,
+      "league_games": 1113,
+      "mean_terminal_reward": 1.1252811320754716,
+      "mean_return": 1.2077155944425613,
+      "mean_score": 55.943396226415096,
+      "win_rate": 0.27358490566037735,
+      "success_rate": 0.27358490566037735,
+      "policy_loss": 0.010211830143816769,
+      "value_loss": 1.0678923010826111,
+      "entropy": 0.23150669634342194,
+      "grad_norm": 0.9257943153131759,
+      "decisions": 1060,
+      "advantage_std": 1.0463638305664062,
+      "clip_fraction": 0.02217881944444445
+    },
+    {
+      "update": 73,
+      "games": 2336,
+      "league_games": 1124,
+      "mean_terminal_reward": 0.926266149870801,
+      "mean_return": 1.0149047635495663,
+      "mean_score": 53.04651162790697,
+      "win_rate": 0.2248062015503876,
+      "success_rate": 0.10852713178294573,
+      "policy_loss": 0.018819799569124978,
+      "value_loss": 0.7952494770288467,
+      "entropy": 0.2710641697049141,
+      "grad_norm": 1.2198408494662296,
+      "decisions": 1290,
+      "advantage_std": 0.8933691382408142,
+      "clip_fraction": 0.028678385416666664
+    },
+    {
+      "update": 74,
+      "games": 2368,
+      "league_games": 1142,
+      "mean_terminal_reward": 0.9435568627450982,
+      "mean_return": 0.9835462849587202,
+      "mean_score": 54.48739495798319,
+      "win_rate": 0.21008403361344538,
+      "success_rate": 0.17647058823529413,
+      "policy_loss": -0.0056954799219965935,
+      "value_loss": 0.9075068593025207,
+      "entropy": 0.23013241812586785,
+      "grad_norm": 0.6768482327352003,
+      "decisions": 1190,
+      "advantage_std": 0.9530507326126099,
+      "clip_fraction": 0.03917074548192771
+    },
+    {
+      "update": 75,
+      "games": 2400,
+      "league_games": 1158,
+      "mean_terminal_reward": 0.986179831932773,
+      "mean_return": 1.0275365469278768,
+      "mean_score": 54.78991596638655,
+      "win_rate": 0.21008403361344538,
+      "success_rate": 0.25210084033613445,
+      "policy_loss": -0.01072417856194079,
+      "value_loss": 0.975770714879036,
+      "entropy": 0.2500064991414547,
+      "grad_norm": 0.7476977781285392,
+      "decisions": 1190,
+      "advantage_std": 0.9900504350662231,
+      "clip_fraction": 0.017481645331325298
+    },
+    {
+      "update": 76,
+      "games": 2432,
+      "league_games": 1177,
+      "mean_terminal_reward": 1.012984347826087,
+      "mean_return": 1.1167742158286273,
+      "mean_score": 55.92173913043478,
+      "win_rate": 0.22608695652173913,
+      "success_rate": 0.20869565217391303,
+      "policy_loss": -0.002902466990053654,
+      "value_loss": 0.9595600217580795,
+      "entropy": 0.25095732510089874,
+      "grad_norm": 0.7294860749893408,
+      "decisions": 1150,
+      "advantage_std": 0.9844299554824829,
+      "clip_fraction": 0.03427889384920635
+    },
+    {
+      "update": 77,
+      "games": 2464,
+      "league_games": 1197,
+      "mean_terminal_reward": 1.0959083333333335,
+      "mean_return": 1.1716450448147953,
+      "mean_score": 54.97826086956522,
+      "win_rate": 0.2717391304347826,
+      "success_rate": 0.20652173913043478,
+      "policy_loss": -0.007770509691908956,
+      "value_loss": 0.9518812820315361,
+      "entropy": 0.23512154445052147,
+      "grad_norm": 0.8044657042267787,
+      "decisions": 920,
+      "advantage_std": 0.977823793888092,
+      "clip_fraction": 0.03608141447368421
+    },
+    {
+      "update": 78,
+      "games": 2496,
+      "league_games": 1216,
+      "mean_terminal_reward": 1.0428055555555555,
+      "mean_return": 1.1360591419506818,
+      "mean_score": 55.19607843137255,
+      "win_rate": 0.23529411764705882,
+      "success_rate": 0.23529411764705882,
+      "policy_loss": -0.004021746848593466,
+      "value_loss": 1.0060324855148792,
+      "entropy": 0.24036048632115126,
+      "grad_norm": 0.6924989025420062,
+      "decisions": 1020,
+      "advantage_std": 1.0052874088287354,
+      "clip_fraction": 0.03308686755952381
+    },
+    {
+      "update": 79,
+      "games": 2528,
+      "league_games": 1234,
+      "mean_terminal_reward": 1.0524576811594204,
+      "mean_return": 1.223135002888739,
+      "mean_score": 54.52173913043478,
+      "win_rate": 0.24347826086956523,
+      "success_rate": 0.19130434782608696,
+      "policy_loss": -0.005611313658300787,
+      "value_loss": 0.9332879900932312,
+      "entropy": 0.24531426429748535,
+      "grad_norm": 0.7199640159949394,
+      "decisions": 1150,
+      "advantage_std": 0.9675027132034302,
+      "clip_fraction": 0.025905257936507935
+    },
+    {
+      "update": 80,
+      "games": 2560,
+      "league_games": 1246,
+      "mean_terminal_reward": 1.0429644444444444,
+      "mean_return": 1.202986128628254,
+      "mean_score": 56.67407407407408,
+      "win_rate": 0.2518518518518518,
+      "success_rate": 0.2518518518518518,
+      "policy_loss": -0.0044903880916535854,
+      "value_loss": 1.041944459080696,
+      "entropy": 0.24587498418986797,
+      "grad_norm": 0.8145147015470288,
+      "decisions": 1350,
+      "advantage_std": 1.0255963802337646,
+      "clip_fraction": 0.02277715773809524
+    },
+    {
+      "update": 81,
+      "games": 2592,
+      "league_games": 1260,
+      "mean_terminal_reward": 1.0401669841269843,
+      "mean_return": 1.0771250675315969,
+      "mean_score": 55.695238095238096,
+      "win_rate": 0.22857142857142856,
+      "success_rate": 0.22857142857142856,
+      "policy_loss": -0.02837469531223178,
+      "value_loss": 1.080488583445549,
+      "entropy": 0.23444817960262299,
+      "grad_norm": 1.0286804294600018,
+      "decisions": 1050,
+      "advantage_std": 1.027256965637207,
+      "clip_fraction": 0.03422475961538461
+    },
+    {
+      "update": 82,
+      "games": 2624,
+      "league_games": 1283,
+      "mean_terminal_reward": 1.0423940972222223,
+      "mean_return": 1.149178353138268,
+      "mean_score": 54.197916666666664,
+      "win_rate": 0.23958333333333334,
+      "success_rate": 0.1875,
+      "policy_loss": -0.0049888356879819185,
+      "value_loss": 0.9422999173402786,
+      "entropy": 0.26578420773148537,
+      "grad_norm": 0.8032632250735463,
+      "decisions": 960,
+      "advantage_std": 0.9745209217071533,
+      "clip_fraction": 0.03824869791666667
+    },
+    {
+      "update": 83,
+      "games": 2656,
+      "league_games": 1300,
+      "mean_terminal_reward": 1.0288425287356322,
+      "mean_return": 1.1121867951005697,
+      "mean_score": 54.775862068965516,
+      "win_rate": 0.23275862068965517,
+      "success_rate": 0.21551724137931033,
+      "policy_loss": -0.006755256373435259,
+      "value_loss": 1.000576138496399,
+      "entropy": 0.25951111540198324,
+      "grad_norm": 0.7739930791537566,
+      "decisions": 1160,
+      "advantage_std": 1.0079227685928345,
+      "clip_fraction": 0.025091911764705883
+    },
+    {
+      "update": 84,
+      "games": 2688,
+      "league_games": 1316,
+      "mean_terminal_reward": 1.158090606060606,
+      "mean_return": 1.3709458220982924,
+      "mean_score": 56.27272727272727,
+      "win_rate": 0.2727272727272727,
+      "success_rate": 0.2909090909090909,
+      "policy_loss": -0.008976958645507693,
+      "value_loss": 1.108344981074333,
+      "entropy": 0.22912891879677771,
+      "grad_norm": 0.9120971348394147,
+      "decisions": 1100,
+      "advantage_std": 1.0522756576538086,
+      "clip_fraction": 0.03491981907894737
+    },
+    {
+      "update": 85,
+      "games": 2720,
+      "league_games": 1332,
+      "mean_terminal_reward": 1.0241157024793388,
+      "mean_return": 1.2193028582260013,
+      "mean_score": 53.51239669421488,
+      "win_rate": 0.24793388429752067,
+      "success_rate": 0.14049586776859505,
+      "policy_loss": -0.0032361512538045646,
+      "value_loss": 0.8881263136863708,
+      "entropy": 0.253463551402092,
+      "grad_norm": 0.6938328116881225,
+      "decisions": 1210,
+      "advantage_std": 0.9418171644210815,
+      "clip_fraction": 0.038730678763440864
+    },
+    {
+      "update": 86,
+      "games": 2752,
+      "league_games": 1345,
+      "mean_terminal_reward": 0.9542822055137845,
+      "mean_return": 1.0672039091587067,
+      "mean_score": 54.714285714285715,
+      "win_rate": 0.21052631578947367,
+      "success_rate": 0.18045112781954886,
+      "policy_loss": -0.01868288506132861,
+      "value_loss": 0.8334491401910782,
+      "entropy": 0.2609463905294736,
+      "grad_norm": 0.7446089963033066,
+      "decisions": 1330,
+      "advantage_std": 0.915016233921051,
+      "clip_fraction": 0.04200520833333334
+    },
+    {
+      "update": 87,
+      "games": 2784,
+      "league_games": 1363,
+      "mean_terminal_reward": 1.1582121794871794,
+      "mean_return": 1.3519637193530798,
+      "mean_score": 56.67307692307692,
+      "win_rate": 0.2692307692307692,
+      "success_rate": 0.2692307692307692,
+      "policy_loss": 0.01658001821488142,
+      "value_loss": 1.0786543428897857,
+      "entropy": 0.22160240970551967,
+      "grad_norm": 1.261966874686926,
+      "decisions": 1040,
+      "advantage_std": 1.023898959159851,
+      "clip_fraction": 0.029296875
+    },
+    {
+      "update": 88,
+      "games": 2816,
+      "league_games": 1377,
+      "mean_terminal_reward": 1.072460579710145,
+      "mean_return": 1.1655564717948437,
+      "mean_score": 56.356521739130436,
+      "win_rate": 0.24347826086956523,
+      "success_rate": 0.26956521739130435,
+      "policy_loss": -0.0045696843415498735,
+      "value_loss": 1.060384339094162,
+      "entropy": 0.22374333962798118,
+      "grad_norm": 0.9208102162597969,
+      "decisions": 1150,
+      "advantage_std": 1.0319008827209473,
+      "clip_fraction": 0.030763268849206347
+    },
+    {
+      "update": 89,
+      "games": 2848,
+      "league_games": 1392,
+      "mean_terminal_reward": 1.0006394957983193,
+      "mean_return": 1.1079007666558027,
+      "mean_score": 54.97478991596638,
+      "win_rate": 0.21008403361344538,
+      "success_rate": 0.23529411764705882,
+      "policy_loss": -0.0031351557467132808,
+      "value_loss": 1.0031313687562942,
+      "entropy": 0.2446923352777958,
+      "grad_norm": 0.7735048074411985,
+      "decisions": 1190,
+      "advantage_std": 1.0052945613861084,
+      "clip_fraction": 0.028696818524096383
+    },
+    {
+      "update": 90,
+      "games": 2880,
+      "league_games": 1412,
+      "mean_terminal_reward": 1.096907590759076,
+      "mean_return": 1.177471705712378,
+      "mean_score": 55.13861386138614,
+      "win_rate": 0.24752475247524752,
+      "success_rate": 0.24752475247524752,
+      "policy_loss": -0.004584296024404466,
+      "value_loss": 1.028260461986065,
+      "entropy": 0.20898660458624363,
+      "grad_norm": 0.687102821817629,
+      "decisions": 1010,
+      "advantage_std": 1.0170166492462158,
+      "clip_fraction": 0.021419808884297523
+    },
+    {
+      "update": 91,
+      "games": 2912,
+      "league_games": 1430,
+      "mean_terminal_reward": 1.0741703703703704,
+      "mean_return": 1.1903356560505927,
+      "mean_score": 54.75925925925926,
+      "win_rate": 0.25,
+      "success_rate": 0.25,
+      "policy_loss": -0.0032366884406656027,
+      "value_loss": 1.138779443502426,
+      "entropy": 0.24731283113360406,
+      "grad_norm": 0.9293683468984606,
+      "decisions": 1080,
+      "advantage_std": 1.069519281387329,
+      "clip_fraction": 0.04743303571428571
+    },
+    {
+      "update": 92,
+      "games": 2944,
+      "league_games": 1442,
+      "mean_terminal_reward": 1.0053978494623654,
+      "mean_return": 1.0587719313334674,
+      "mean_score": 54.66129032258065,
+      "win_rate": 0.23387096774193547,
+      "success_rate": 0.21774193548387097,
+      "policy_loss": -0.00426107753883116,
+      "value_loss": 1.0611416399478912,
+      "entropy": 0.24954552128911017,
+      "grad_norm": 0.731166742294169,
+      "decisions": 1240,
+      "advantage_std": 1.0291558504104614,
+      "clip_fraction": 0.03187210648148148
+    },
+    {
+      "update": 93,
+      "games": 2976,
+      "league_games": 1455,
+      "mean_terminal_reward": 0.9978748717948719,
+      "mean_return": 1.0493112369440496,
+      "mean_score": 54.58461538461538,
+      "win_rate": 0.23846153846153847,
+      "success_rate": 0.2,
+      "policy_loss": -0.013185107304404179,
+      "value_loss": 0.8446094989776611,
+      "entropy": 0.2582728850344817,
+      "grad_norm": 1.1946589151657738,
+      "decisions": 1300,
+      "advantage_std": 0.916253924369812,
+      "clip_fraction": 0.06962890625
+    },
+    {
+      "update": 94,
+      "games": 3008,
+      "league_games": 1470,
+      "mean_terminal_reward": 0.973201652892562,
+      "mean_return": 1.1288283211179078,
+      "mean_score": 54.18181818181818,
+      "win_rate": 0.2066115702479339,
+      "success_rate": 0.18181818181818182,
+      "policy_loss": -0.0012644906062632799,
+      "value_loss": 0.8449528187513351,
+      "entropy": 0.23681240826845168,
+      "grad_norm": 0.7902161679854676,
+      "decisions": 1210,
+      "advantage_std": 0.9211807250976562,
+      "clip_fraction": 0.04388230846774194
+    },
+    {
+      "update": 95,
+      "games": 3040,
+      "league_games": 1489,
+      "mean_terminal_reward": 1.120530606060606,
+      "mean_return": 1.3925008191727102,
+      "mean_score": 55.50909090909091,
+      "win_rate": 0.2727272727272727,
+      "success_rate": 0.21818181818181817,
+      "policy_loss": -0.009248182969167828,
+      "value_loss": 1.0676142036914826,
+      "entropy": 0.23581186458468437,
+      "grad_norm": 0.7697217969819068,
+      "decisions": 1100,
+      "advantage_std": 1.0279837846755981,
+      "clip_fraction": 0.03533100328947368
+    },
+    {
+      "update": 96,
+      "games": 3072,
+      "league_games": 1503,
+      "mean_terminal_reward": 1.0290645061728396,
+      "mean_return": 1.1393332984298468,
+      "mean_score": 53.5462962962963,
+      "win_rate": 0.24074074074074073,
+      "success_rate": 0.17592592592592593,
+      "policy_loss": 0.0021378067322075367,
+      "value_loss": 0.8869780123233795,
+      "entropy": 0.24881015568971634,
+      "grad_norm": 0.9374502268195595,
+      "decisions": 1080,
+      "advantage_std": 0.9409566521644592,
+      "clip_fraction": 0.02251674107142857
+    },
+    {
+      "update": 97,
+      "games": 3104,
+      "league_games": 1514,
+      "mean_terminal_reward": 0.9912785529715762,
+      "mean_return": 1.0974757422227412,
+      "mean_score": 53.945736434108525,
+      "win_rate": 0.21705426356589147,
+      "success_rate": 0.15503875968992248,
+      "policy_loss": -0.023173080718455214,
+      "value_loss": 0.9628400628765424,
+      "entropy": 0.2563543611516555,
+      "grad_norm": 1.0495437953251356,
+      "decisions": 1290,
+      "advantage_std": 0.9713892936706543,
+      "clip_fraction": 0.0474609375
+    },
+    {
+      "update": 98,
+      "games": 3136,
+      "league_games": 1531,
+      "mean_terminal_reward": 1.0433370078740158,
+      "mean_return": 1.2125612143427134,
+      "mean_score": 55.874015748031496,
+      "win_rate": 0.2283464566929134,
+      "success_rate": 0.2204724409448819,
+      "policy_loss": -0.0047055180533789095,
+      "value_loss": 0.896041351556778,
+      "entropy": 0.2647502101957798,
+      "grad_norm": 0.7030353699572054,
+      "decisions": 1270,
+      "advantage_std": 0.9519529342651367,
+      "clip_fraction": 0.033544524898373985
+    },
+    {
+      "update": 99,
+      "games": 3168,
+      "league_games": 1544,
+      "mean_terminal_reward": 1.023668103448276,
+      "mean_return": 1.1170222526416183,
+      "mean_score": 55.327586206896555,
+      "win_rate": 0.22413793103448276,
+      "success_rate": 0.20689655172413793,
+      "policy_loss": -0.0029426012653857468,
+      "value_loss": 0.8759870737791061,
+      "entropy": 0.23360823914408685,
+      "grad_norm": 0.7213713576402172,
+      "decisions": 1160,
+      "advantage_std": 0.941138744354248,
+      "clip_fraction": 0.024505974264705882
+    },
+    {
+      "update": 100,
+      "games": 3200,
+      "league_games": 1560,
+      "mean_terminal_reward": 0.9980294642857144,
+      "mean_return": 1.0129022914916277,
+      "mean_score": 55.017857142857146,
+      "win_rate": 0.20535714285714285,
+      "success_rate": 0.25,
+      "policy_loss": -0.011119159730151295,
+      "value_loss": 0.9270632147789002,
+      "entropy": 0.24495369717478752,
+      "grad_norm": 0.7681413577344611,
+      "decisions": 1120,
+      "advantage_std": 0.9624214172363281,
+      "clip_fraction": 0.03098958333333333
+    },
+    {
+      "update": 101,
+      "games": 3232,
+      "league_games": 1571,
+      "mean_terminal_reward": 0.9800927648578811,
+      "mean_return": 1.0194664909504354,
+      "mean_score": 54.86046511627907,
+      "win_rate": 0.20930232558139536,
+      "success_rate": 0.20930232558139536,
+      "policy_loss": -0.038395171985030174,
+      "value_loss": 1.0597874994079273,
+      "entropy": 0.26569757362206775,
+      "grad_norm": 1.402810826892636,
+      "decisions": 1290,
+      "advantage_std": 0.9970744848251343,
+      "clip_fraction": 0.05205078124999999
+    },
+    {
+      "update": 102,
+      "games": 3264,
+      "league_games": 1588,
+      "mean_terminal_reward": 1.0895532763532767,
+      "mean_return": 1.3610686482861638,
+      "mean_score": 55.43589743589744,
+      "win_rate": 0.2564102564102564,
+      "success_rate": 0.23931623931623933,
+      "policy_loss": -0.0027385467663407327,
+      "value_loss": 1.0016732424497605,
+      "entropy": 0.2473209783434868,
+      "grad_norm": 0.8217690757593754,
+      "decisions": 1170,
+      "advantage_std": 1.0088316202163696,
+      "clip_fraction": 0.0568626926369863
+    },
+    {
+      "update": 103,
+      "games": 3296,
+      "league_games": 1602,
+      "mean_terminal_reward": 1.0276757309941522,
+      "mean_return": 1.20188201777637,
+      "mean_score": 54.58771929824562,
+      "win_rate": 0.24561403508771928,
+      "success_rate": 0.20175438596491227,
+      "policy_loss": -0.0038967118598520756,
+      "value_loss": 0.9141419023275376,
+      "entropy": 0.2543737657368183,
+      "grad_norm": 0.735322720397389,
+      "decisions": 1140,
+      "advantage_std": 0.9615408182144165,
+      "clip_fraction": 0.01598868534482759
+    },
+    {
+      "update": 104,
+      "games": 3328,
+      "league_games": 1618,
+      "mean_terminal_reward": 1.0123811728395062,
+      "mean_return": 1.112206474877894,
+      "mean_score": 54.18518518518518,
+      "win_rate": 0.2222222222222222,
+      "success_rate": 0.16666666666666666,
+      "policy_loss": -0.011292358743958175,
+      "value_loss": 0.7908900916576386,
+      "entropy": 0.24980344772338867,
+      "grad_norm": 0.8942835730409027,
+      "decisions": 1080,
+      "advantage_std": 0.8978046774864197,
+      "clip_fraction": 0.01704799107142857
+    },
+    {
+      "update": 105,
+      "games": 3360,
+      "league_games": 1634,
+      "mean_terminal_reward": 1.0202717460317459,
+      "mean_return": 1.0455871354788542,
+      "mean_score": 53.666666666666664,
+      "win_rate": 0.23809523809523808,
+      "success_rate": 0.1619047619047619,
+      "policy_loss": 0.03183060225564986,
+      "value_loss": 0.8189051136374473,
+      "entropy": 0.254453732073307,
+      "grad_norm": 1.1176171091819895,
+      "decisions": 1050,
+      "advantage_std": 0.9308090209960938,
+      "clip_fraction": 0.07127403846153846
+    },
+    {
+      "update": 106,
+      "games": 3392,
+      "league_games": 1648,
+      "mean_terminal_reward": 1.012357320872274,
+      "mean_return": 1.014350543380715,
+      "mean_score": 52.850467289719624,
+      "win_rate": 0.2616822429906542,
+      "success_rate": 0.1308411214953271,
+      "policy_loss": -0.0016243352554738521,
+      "value_loss": 0.8615009099245071,
+      "entropy": 0.2607205905020237,
+      "grad_norm": 0.9575347558710433,
+      "decisions": 1070,
+      "advantage_std": 0.9233827590942383,
+      "clip_fraction": 0.034757133152173915
+    },
+    {
+      "update": 107,
+      "games": 3424,
+      "league_games": 1664,
+      "mean_terminal_reward": 1.0068934959349594,
+      "mean_return": 1.1949517622124404,
+      "mean_score": 53.796747967479675,
+      "win_rate": 0.22764227642276422,
+      "success_rate": 0.17886178861788618,
+      "policy_loss": -0.006117271026596427,
+      "value_loss": 0.8571378380060196,
+      "entropy": 0.26142021268606186,
+      "grad_norm": 0.7386119901713154,
+      "decisions": 1230,
+      "advantage_std": 0.9288892149925232,
+      "clip_fraction": 0.0354956765776699
+    },
+    {
+      "update": 108,
+      "games": 3456,
+      "league_games": 1681,
+      "mean_terminal_reward": 1.0051498599439777,
+      "mean_return": 1.0747650855919346,
+      "mean_score": 54.857142857142854,
+      "win_rate": 0.21008403361344538,
+      "success_rate": 0.226890756302521,
+      "policy_loss": -0.010656675114296377,
+      "value_loss": 0.9897502154111862,
+      "entropy": 0.2554769992828369,
+      "grad_norm": 0.7234318080814373,
+      "decisions": 1190,
+      "advantage_std": 0.9983271956443787,
+      "clip_fraction": 0.022983339608433736
+    },
+    {
+      "update": 109,
+      "games": 3488,
+      "league_games": 1695,
+      "mean_terminal_reward": 1.0074647849462366,
+      "mean_return": 1.1877677906304598,
+      "mean_score": 54.75806451612903,
+      "win_rate": 0.25806451612903225,
+      "success_rate": 0.1935483870967742,
+      "policy_loss": -0.005688511044718325,
+      "value_loss": 0.892862731218338,
+      "entropy": 0.25363891795277593,
+      "grad_norm": 0.7267403693506461,
+      "decisions": 1240,
+      "advantage_std": 0.9509347677230835,
+      "clip_fraction": 0.023314525462962962
+    },
+    {
+      "update": 110,
+      "games": 3520,
+      "league_games": 1713,
+      "mean_terminal_reward": 1.0382013888888888,
+      "mean_return": 1.1290581598877907,
+      "mean_score": 54.84166666666667,
+      "win_rate": 0.21666666666666667,
+      "success_rate": 0.275,
+      "policy_loss": -0.007034709956496954,
+      "value_loss": 0.87164226770401,
+      "entropy": 0.24759253188967706,
+      "grad_norm": 0.729092033043071,
+      "decisions": 1200,
+      "advantage_std": 0.9335840344429016,
+      "clip_fraction": 0.014399857954545455
+    },
+    {
+      "update": 111,
+      "games": 3552,
+      "league_games": 1728,
+      "mean_terminal_reward": 1.0640928571428572,
+      "mean_return": 1.2033068155869842,
+      "mean_score": 55.544642857142854,
+      "win_rate": 0.25892857142857145,
+      "success_rate": 0.22321428571428573,
+      "policy_loss": 0.00723178731277585,
+      "value_loss": 0.9692416995763778,
+      "entropy": 0.24867641255259515,
+      "grad_norm": 0.8335114558803818,
+      "decisions": 1120,
+      "advantage_std": 0.9932319521903992,
+      "clip_fraction": 0.028645833333333332
+    },
+    {
+      "update": 112,
+      "games": 3584,
+      "league_games": 1744,
+      "mean_terminal_reward": 1.0308099173553718,
+      "mean_return": 1.1876861546188593,
+      "mean_score": 54.54545454545455,
+      "win_rate": 0.2231404958677686,
+      "success_rate": 0.2396694214876033,
+      "policy_loss": -0.007337647769600153,
+      "value_loss": 0.8769456595182419,
+      "entropy": 0.26737277284264566,
+      "grad_norm": 0.6700530571296027,
+      "decisions": 1210,
+      "advantage_std": 0.9392502307891846,
+      "clip_fraction": 0.02158728158602151
+    },
+    {
+      "update": 113,
+      "games": 3616,
+      "league_games": 1762,
+      "mean_terminal_reward": 1.0475669540229886,
+      "mean_return": 1.2882288116961718,
+      "mean_score": 54.83620689655172,
+      "win_rate": 0.23275862068965517,
+      "success_rate": 0.1896551724137931,
+      "policy_loss": -0.0003655463457107544,
+      "value_loss": 0.9126341342926025,
+      "entropy": 0.2688276320695877,
+      "grad_norm": 0.8504233900857928,
+      "decisions": 1160,
+      "advantage_std": 0.9655116200447083,
+      "clip_fraction": 0.02001378676470588
+    },
+    {
+      "update": 114,
+      "games": 3648,
+      "league_games": 1781,
+      "mean_terminal_reward": 1.076602702702703,
+      "mean_return": 1.180957093834877,
+      "mean_score": 55.57657657657658,
+      "win_rate": 0.23423423423423423,
+      "success_rate": 0.2702702702702703,
+      "policy_loss": -0.0063838615315034986,
+      "value_loss": 0.9128811866044998,
+      "entropy": 0.2591943427920341,
+      "grad_norm": 0.7675788801097001,
+      "decisions": 1110,
+      "advantage_std": 0.9595110416412354,
+      "clip_fraction": 0.037627180232558136
+    },
+    {
+      "update": 115,
+      "games": 3680,
+      "league_games": 1797,
+      "mean_terminal_reward": 0.9435077134986225,
+      "mean_return": 0.9731806605122983,
+      "mean_score": 53.56198347107438,
+      "win_rate": 0.21487603305785125,
+      "success_rate": 0.1322314049586777,
+      "policy_loss": -0.0045261413790285586,
+      "value_loss": 0.7897028237581253,
+      "entropy": 0.2786051668226719,
+      "grad_norm": 0.68095685530559,
+      "decisions": 1210,
+      "advantage_std": 0.8921739459037781,
+      "clip_fraction": 0.01834047379032258
+    },
+    {
+      "update": 116,
+      "games": 3712,
+      "league_games": 1815,
+      "mean_terminal_reward": 1.0686368253968253,
+      "mean_return": 1.1540021761320531,
+      "mean_score": 54.80952380952381,
+      "win_rate": 0.2571428571428571,
+      "success_rate": 0.24761904761904763,
+      "policy_loss": 0.010253263777121902,
+      "value_loss": 0.9650112450122833,
+      "entropy": 0.27399359717965127,
+      "grad_norm": 1.2172418809407786,
+      "decisions": 1050,
+      "advantage_std": 0.9757916331291199,
+      "clip_fraction": 0.07065805288461538
+    },
+    {
+      "update": 117,
+      "games": 3744,
+      "league_games": 1830,
+      "mean_terminal_reward": 0.9811325333333335,
+      "mean_return": 1.0447323452681303,
+      "mean_score": 55.16,
+      "win_rate": 0.208,
+      "success_rate": 0.208,
+      "policy_loss": -0.0030519918538630007,
+      "value_loss": 0.8022725760936738,
+      "entropy": 0.2468080349266529,
+      "grad_norm": 0.7202130635675127,
+      "decisions": 1250,
+      "advantage_std": 0.8978455066680908,
+      "clip_fraction": 0.02676818307522124
+    },
+    {
+      "update": 118,
+      "games": 3776,
+      "league_games": 1846,
+      "mean_terminal_reward": 0.9923601092896174,
+      "mean_return": 1.068253641948104,
+      "mean_score": 53.967213114754095,
+      "win_rate": 0.22950819672131148,
+      "success_rate": 0.1721311475409836,
+      "policy_loss": -0.005860264995135367,
+      "value_loss": 0.885638353228569,
+      "entropy": 0.2566378958523273,
+      "grad_norm": 0.6604241534632282,
+      "decisions": 1220,
+      "advantage_std": 0.9482401609420776,
+      "clip_fraction": 0.03422751913265306
+    },
+    {
+      "update": 119,
+      "games": 3808,
+      "league_games": 1863,
+      "mean_terminal_reward": 1.0803317585301837,
+      "mean_return": 1.2759649604558945,
+      "mean_score": 55.79527559055118,
+      "win_rate": 0.2440944881889764,
+      "success_rate": 0.25196850393700787,
+      "policy_loss": -0.004644280765205622,
+      "value_loss": 0.8919555723667145,
+      "entropy": 0.25025786459445953,
+      "grad_norm": 0.7114807081568268,
+      "decisions": 1270,
+      "advantage_std": 0.9478539824485779,
+      "clip_fraction": 0.017346290650406507
+    },
+    {
+      "update": 120,
+      "games": 3840,
+      "league_games": 1881,
+      "mean_terminal_reward": 0.9946617737003056,
+      "mean_return": 1.188446769490838,
+      "mean_score": 54.440366972477065,
+      "win_rate": 0.22018348623853212,
+      "success_rate": 0.1834862385321101,
+      "policy_loss": 0.009833431430160999,
+      "value_loss": 0.8258357465267181,
+      "entropy": 0.26602303236722946,
+      "grad_norm": 0.804555041375646,
+      "decisions": 1090,
+      "advantage_std": 0.9185720682144165,
+      "clip_fraction": 0.04415246212121212
+    },
+    {
+      "update": 121,
+      "games": 3872,
+      "league_games": 1898,
+      "mean_terminal_reward": 1.0209802469135802,
+      "mean_return": 1.1110837855376303,
+      "mean_score": 54.47222222222222,
+      "win_rate": 0.25,
+      "success_rate": 0.1574074074074074,
+      "policy_loss": -0.014242461323738098,
+      "value_loss": 0.856564262509346,
+      "entropy": 0.2538205936551094,
+      "grad_norm": 0.7589386042237516,
+      "decisions": 1080,
+      "advantage_std": 0.925283670425415,
+      "clip_fraction": 0.04801897321428571
+    },
+    {
+      "update": 122,
+      "games": 3904,
+      "league_games": 1914,
+      "mean_terminal_reward": 1.0521896024464832,
+      "mean_return": 1.1831484399735928,
+      "mean_score": 54.37614678899082,
+      "win_rate": 0.27522935779816515,
+      "success_rate": 0.1559633027522936,
+      "policy_loss": -0.006253191083669662,
+      "value_loss": 0.8915362417697906,
+      "entropy": 0.2650298230350018,
+      "grad_norm": 0.8235782750183519,
+      "decisions": 1090,
+      "advantage_std": 0.9447879195213318,
+      "clip_fraction": 0.03689630681818181
+    },
+    {
+      "update": 123,
+      "games": 3936,
+      "league_games": 1934,
+      "mean_terminal_reward": 1.0586705673758865,
+      "mean_return": 1.1491221021860838,
+      "mean_score": 54.41489361702128,
+      "win_rate": 0.2765957446808511,
+      "success_rate": 0.11702127659574468,
+      "policy_loss": -0.0034631246817298234,
+      "value_loss": 0.8536221906542778,
+      "entropy": 0.27289898321032524,
+      "grad_norm": 0.750180122136288,
+      "decisions": 940,
+      "advantage_std": 0.9269302487373352,
+      "clip_fraction": 0.03470203488372093
+    },
+    {
+      "update": 124,
+      "games": 3968,
+      "league_games": 1947,
+      "mean_terminal_reward": 1.0547558479532164,
+      "mean_return": 1.183311777189374,
+      "mean_score": 54.78947368421053,
+      "win_rate": 0.2894736842105263,
+      "success_rate": 0.19298245614035087,
+      "policy_loss": -0.0007446174044162035,
+      "value_loss": 0.866823998093605,
+      "entropy": 0.2545391730964184,
+      "grad_norm": 0.7877682253789786,
+      "decisions": 1140,
+      "advantage_std": 0.9356067776679993,
+      "clip_fraction": 0.019820851293103448
+    },
+    {
+      "update": 125,
+      "games": 4000,
+      "league_games": 1966,
+      "mean_terminal_reward": 0.9727107142857143,
+      "mean_return": 1.065542233758606,
+      "mean_score": 55.455357142857146,
+      "win_rate": 0.20535714285714285,
+      "success_rate": 0.14285714285714285,
+      "policy_loss": -0.007910737674683333,
+      "value_loss": 0.7160544514656066,
+      "entropy": 0.2598918005824089,
+      "grad_norm": 0.8047059530532901,
+      "decisions": 1120,
+      "advantage_std": 0.8598183393478394,
+      "clip_fraction": 0.025390625
+    },
+    {
+      "update": 126,
+      "games": 4032,
+      "league_games": 1981,
+      "mean_terminal_reward": 1.042952976190476,
+      "mean_return": 1.2090158984065056,
+      "mean_score": 53.92857142857143,
+      "win_rate": 0.25,
+      "success_rate": 0.14285714285714285,
+      "policy_loss": 0.003339369408786297,
+      "value_loss": 0.8404320657253266,
+      "entropy": 0.274679908156395,
+      "grad_norm": 0.8313659597517906,
+      "decisions": 1120,
+      "advantage_std": 0.9293029308319092,
+      "clip_fraction": 0.03502604166666667
+    },
+    {
+      "update": 127,
+      "games": 4064,
+      "league_games": 1997,
+      "mean_terminal_reward": 0.9837193146417447,
+      "mean_return": 1.0675563756376505,
+      "mean_score": 54.63551401869159,
+      "win_rate": 0.2336448598130841,
+      "success_rate": 0.16822429906542055,
+      "policy_loss": -0.003733276855200529,
+      "value_loss": 0.8997240722179413,
+      "entropy": 0.22918919548392297,
+      "grad_norm": 0.8789203704059514,
+      "decisions": 1070,
+      "advantage_std": 0.961610734462738,
+      "clip_fraction": 0.021475883152173914
+    },
+    {
+      "update": 128,
+      "games": 4096,
+      "league_games": 2016,
+      "mean_terminal_reward": 1.0495666666666668,
+      "mean_return": 1.2254694644361734,
+      "mean_score": 55.31578947368421,
+      "win_rate": 0.24561403508771928,
+      "success_rate": 0.18421052631578946,
+      "policy_loss": -0.009086307231336832,
+      "value_loss": 0.8801320970058442,
+      "entropy": 0.25166006162762644,
+      "grad_norm": 0.8298270312766783,
+      "decisions": 1140,
+      "advantage_std": 0.9438962936401367,
+      "clip_fraction": 0.02436018318965517
+    },
+    {
+      "update": 129,
+      "games": 4128,
+      "league_games": 2032,
+      "mean_terminal_reward": 1.0540881355932203,
+      "mean_return": 1.2324199602007866,
+      "mean_score": 55.80508474576271,
+      "win_rate": 0.2457627118644068,
+      "success_rate": 0.22033898305084745,
+      "policy_loss": -0.003564216638915241,
+      "value_loss": 0.9359174609184265,
+      "entropy": 0.2709245026111603,
+      "grad_norm": 0.7081728048159517,
+      "decisions": 1180,
+      "advantage_std": 0.9781944155693054,
+      "clip_fraction": 0.03503605769230769
+    },
+    {
+      "update": 130,
+      "games": 4160,
+      "league_games": 2043,
+      "mean_terminal_reward": 1.016384946236559,
+      "mean_return": 1.1556736249476671,
+      "mean_score": 54.29838709677419,
+      "win_rate": 0.24193548387096775,
+      "success_rate": 0.16129032258064516,
+      "policy_loss": -0.006008445541374386,
+      "value_loss": 0.7289337575435638,
+      "entropy": 0.25981218442320825,
+      "grad_norm": 0.7017529336226044,
+      "decisions": 1240,
+      "advantage_std": 0.8562602996826172,
+      "clip_fraction": 0.03687065972222222
+    },
+    {
+      "update": 131,
+      "games": 4192,
+      "league_games": 2063,
+      "mean_terminal_reward": 1.2200139194139195,
+      "mean_return": 1.4212983716279268,
+      "mean_score": 56.20879120879121,
+      "win_rate": 0.32967032967032966,
+      "success_rate": 0.24175824175824176,
+      "policy_loss": -0.002296577556990087,
+      "value_loss": 0.9592088796198368,
+      "entropy": 0.2348523736000061,
+      "grad_norm": 0.9116618562258559,
+      "decisions": 910,
+      "advantage_std": 0.9830583333969116,
+      "clip_fraction": 0.024816378741197184
+    },
+    {
+      "update": 132,
+      "games": 4224,
+      "league_games": 2076,
+      "mean_terminal_reward": 0.9696278195488723,
+      "mean_return": 1.1063652914017439,
+      "mean_score": 53.54887218045113,
+      "win_rate": 0.21052631578947367,
+      "success_rate": 0.15789473684210525,
+      "policy_loss": 0.016603917892401416,
+      "value_loss": 0.9519031271338463,
+      "entropy": 0.29516079152623814,
+      "grad_norm": 1.1241316209999905,
+      "decisions": 1330,
+      "advantage_std": 0.9849704504013062,
+      "clip_fraction": 0.046744791666666674
+    },
+    {
+      "update": 133,
+      "games": 4256,
+      "league_games": 2094,
+      "mean_terminal_reward": 1.1461114285714287,
+      "mean_return": 1.3394807460717857,
+      "mean_score": 55.41904761904762,
+      "win_rate": 0.2857142857142857,
+      "success_rate": 0.2571428571428571,
+      "policy_loss": 0.007867539627477526,
+      "value_loss": 0.9545314639806748,
+      "entropy": 0.25395691841840745,
+      "grad_norm": 1.0078920163472909,
+      "decisions": 1050,
+      "advantage_std": 0.9729546904563904,
+      "clip_fraction": 0.05375600961538461
+    },
+    {
+      "update": 134,
+      "games": 4288,
+      "league_games": 2111,
+      "mean_terminal_reward": 1.157261728395062,
+      "mean_return": 1.34124088101089,
+      "mean_score": 55.97222222222222,
+      "win_rate": 0.2777777777777778,
+      "success_rate": 0.24074074074074073,
+      "policy_loss": 0.007548524672165513,
+      "value_loss": 0.9800918281078339,
+      "entropy": 0.24724438339471816,
+      "grad_norm": 0.8557410315647538,
+      "decisions": 1080,
+      "advantage_std": 0.9849541187286377,
+      "clip_fraction": 0.0416015625
+    },
+    {
+      "update": 135,
+      "games": 4320,
+      "league_games": 2131,
+      "mean_terminal_reward": 1.1650873786407767,
+      "mean_return": 1.3884517817059532,
+      "mean_score": 56.87378640776699,
+      "win_rate": 0.2815533980582524,
+      "success_rate": 0.30097087378640774,
+      "policy_loss": -0.024041764438152313,
+      "value_loss": 1.0135736152529717,
+      "entropy": 0.2453913874924183,
+      "grad_norm": 1.5202054940398368,
+      "decisions": 1030,
+      "advantage_std": 0.998313844203949,
+      "clip_fraction": 0.03567708333333333
+    },
+    {
+      "update": 136,
+      "games": 4352,
+      "league_games": 2152,
+      "mean_terminal_reward": 1.0998713836477987,
+      "mean_return": 1.2578881541267037,
+      "mean_score": 55.490566037735846,
+      "win_rate": 0.2641509433962264,
+      "success_rate": 0.2830188679245283,
+      "policy_loss": 0.0019636118784546854,
+      "value_loss": 0.8686193525791168,
+      "entropy": 0.23271064907312394,
+      "grad_norm": 1.0906917735594372,
+      "decisions": 1060,
+      "advantage_std": 0.9448036551475525,
+      "clip_fraction": 0.033745659722222224
+    },
+    {
+      "update": 137,
+      "games": 4384,
+      "league_games": 2164,
+      "mean_terminal_reward": 1.0465906779661016,
+      "mean_return": 1.2133406568318605,
+      "mean_score": 54.813559322033896,
+      "win_rate": 0.2288135593220339,
+      "success_rate": 0.211864406779661,
+      "policy_loss": -0.005547486199066043,
+      "value_loss": 0.9321452736854553,
+      "entropy": 0.23445573896169664,
+      "grad_norm": 0.7005426910029251,
+      "decisions": 1180,
+      "advantage_std": 0.9665768146514893,
+      "clip_fraction": 0.01620592948717949
+    },
+    {
+      "update": 138,
+      "games": 4416,
+      "league_games": 2179,
+      "mean_terminal_reward": 1.0509133903133903,
+      "mean_return": 1.146517156623304,
+      "mean_score": 56.05982905982906,
+      "win_rate": 0.23076923076923078,
+      "success_rate": 0.27350427350427353,
+      "policy_loss": -0.005407593259587884,
+      "value_loss": 0.97299984395504,
+      "entropy": 0.23253384977579117,
+      "grad_norm": 0.7827856339411234,
+      "decisions": 1170,
+      "advantage_std": 0.9959478974342346,
+      "clip_fraction": 0.02178670804794521
+    },
+    {
+      "update": 139,
+      "games": 4448,
+      "league_games": 2195,
+      "mean_terminal_reward": 1.070449002849003,
+      "mean_return": 1.200496859382838,
+      "mean_score": 55.64102564102564,
+      "win_rate": 0.24786324786324787,
+      "success_rate": 0.23931623931623933,
+      "policy_loss": -0.004625107673928141,
+      "value_loss": 0.8520255953073501,
+      "entropy": 0.23745441064238548,
+      "grad_norm": 0.7267117162341146,
+      "decisions": 1170,
+      "advantage_std": 0.9287912845611572,
+      "clip_fraction": 0.02051583904109589
+    },
+    {
+      "update": 140,
+      "games": 4480,
+      "league_games": 2210,
+      "mean_terminal_reward": 0.9880171171171171,
+      "mean_return": 1.0869480855762959,
+      "mean_score": 54.18018018018018,
+      "win_rate": 0.22522522522522523,
+      "success_rate": 0.13513513513513514,
+      "policy_loss": -0.014375986065715551,
+      "value_loss": 0.7634831190109252,
+      "entropy": 0.25786673128604887,
+      "grad_norm": 0.8026030044715373,
+      "decisions": 1110,
+      "advantage_std": 0.877252995967865,
+      "clip_fraction": 0.03353924418604651
+    },
+    {
+      "update": 141,
+      "games": 4512,
+      "league_games": 2223,
+      "mean_terminal_reward": 1.067404644808743,
+      "mean_return": 1.1749078705906868,
+      "mean_score": 55.377049180327866,
+      "win_rate": 0.22950819672131148,
+      "success_rate": 0.2540983606557377,
+      "policy_loss": -0.004955284181050956,
+      "value_loss": 0.9078856855630875,
+      "entropy": 0.2377587914466858,
+      "grad_norm": 0.6760688052388149,
+      "decisions": 1220,
+      "advantage_std": 0.9544668793678284,
+      "clip_fraction": 0.036439732142857145
+    },
+    {
+      "update": 142,
+      "games": 4544,
+      "league_games": 2238,
+      "mean_terminal_reward": 1.0004177777777779,
+      "mean_return": 1.0923580359958578,
+      "mean_score": 54.858333333333334,
+      "win_rate": 0.23333333333333334,
+      "success_rate": 0.19166666666666668,
+      "policy_loss": -0.0043326892191544175,
+      "value_loss": 0.8703333348035812,
+      "entropy": 0.24261540099978446,
+      "grad_norm": 0.6712529693246535,
+      "decisions": 1200,
+      "advantage_std": 0.9384761452674866,
+      "clip_fraction": 0.0380859375
+    },
+    {
+      "update": 143,
+      "games": 4576,
+      "league_games": 2257,
+      "mean_terminal_reward": 0.9829312121212122,
+      "mean_return": 1.0254207039251924,
+      "mean_score": 54.08181818181818,
+      "win_rate": 0.22727272727272727,
+      "success_rate": 0.18181818181818182,
+      "policy_loss": -0.01092428988777101,
+      "value_loss": 0.8638529121875763,
+      "entropy": 0.24089042767882346,
+      "grad_norm": 0.7498333865600089,
+      "decisions": 1100,
+      "advantage_std": 0.9370197057723999,
+      "clip_fraction": 0.018277138157894734
+    },
+    {
+      "update": 144,
+      "games": 4608,
+      "league_games": 2274,
+      "mean_terminal_reward": 1.1037483974358975,
+      "mean_return": 1.278091455809772,
+      "mean_score": 56.91346153846154,
+      "win_rate": 0.25,
+      "success_rate": 0.3173076923076923,
+      "policy_loss": -0.0416939701884985,
+      "value_loss": 1.0606409400701522,
+      "entropy": 0.2117343544960022,
+      "grad_norm": 1.2415379811871872,
+      "decisions": 1040,
+      "advantage_std": 1.0345662832260132,
+      "clip_fraction": 0.051953125
+    },
+    {
+      "update": 145,
+      "games": 4640,
+      "league_games": 2289,
+      "mean_terminal_reward": 1.0814543103448275,
+      "mean_return": 1.258936608210206,
+      "mean_score": 56.491379310344826,
+      "win_rate": 0.25,
+      "success_rate": 0.25,
+      "policy_loss": 0.000599909492302686,
+      "value_loss": 0.9428904384374619,
+      "entropy": 0.24041584953665734,
+      "grad_norm": 0.7773852462301369,
+      "decisions": 1160,
+      "advantage_std": 0.9706028699874878,
+      "clip_fraction": 0.016199448529411766
+    },
+    {
+      "update": 146,
+      "games": 4672,
+      "league_games": 2306,
+      "mean_terminal_reward": 1.0081906779661018,
+      "mean_return": 1.1621915844734758,
+      "mean_score": 53.61864406779661,
+      "win_rate": 0.22033898305084745,
+      "success_rate": 0.16101694915254236,
+      "policy_loss": 0.0017406681552529335,
+      "value_loss": 0.770032873749733,
+      "entropy": 0.2463189959526062,
+      "grad_norm": 0.7489251232926718,
+      "decisions": 1180,
+      "advantage_std": 0.8855251669883728,
+      "clip_fraction": 0.03249699519230769
+    },
+    {
+      "update": 147,
+      "games": 4704,
+      "league_games": 2323,
+      "mean_terminal_reward": 1.0451519083969465,
+      "mean_return": 1.1753183407709002,
+      "mean_score": 55.10687022900763,
+      "win_rate": 0.2366412213740458,
+      "success_rate": 0.1984732824427481,
+      "policy_loss": -0.016726403613574803,
+      "value_loss": 0.790523232271274,
+      "entropy": 0.25052169275780517,
+      "grad_norm": 0.9832077754683898,
+      "decisions": 1310,
+      "advantage_std": 0.8983210325241089,
+      "clip_fraction": 0.05434027777777778
+    },
+    {
+      "update": 148,
+      "games": 4736,
+      "league_games": 2340,
+      "mean_terminal_reward": 1.1316941520467838,
+      "mean_return": 1.3699800865724683,
+      "mean_score": 57.473684210526315,
+      "win_rate": 0.2543859649122807,
+      "success_rate": 0.30701754385964913,
+      "policy_loss": -0.012687664199620485,
+      "value_loss": 1.0336032301187514,
+      "entropy": 0.24040348455309868,
+      "grad_norm": 0.7426507628394428,
+      "decisions": 1140,
+      "advantage_std": 1.0216714143753052,
+      "clip_fraction": 0.04300242456896552
+    },
+    {
+      "update": 149,
+      "games": 4768,
+      "league_games": 2354,
+      "mean_terminal_reward": 1.0394352,
+      "mean_return": 1.1410750592767727,
+      "mean_score": 55.816,
+      "win_rate": 0.248,
+      "success_rate": 0.272,
+      "policy_loss": -0.0046775880618952215,
+      "value_loss": 0.9478259742259979,
+      "entropy": 0.25671446695923805,
+      "grad_norm": 0.6864127883217659,
+      "decisions": 1250,
+      "advantage_std": 0.9753460884094238,
+      "clip_fraction": 0.021923396017699114
+    },
+    {
+      "update": 150,
+      "games": 4800,
+      "league_games": 2369,
+      "mean_terminal_reward": 1.0078527272727273,
+      "mean_return": 0.9538308081682771,
+      "mean_score": 55.13636363636363,
+      "win_rate": 0.22727272727272727,
+      "success_rate": 0.24545454545454545,
+      "policy_loss": 0.0038675050251185893,
+      "value_loss": 0.9048703938722611,
+      "entropy": 0.24022986069321633,
+      "grad_norm": 0.7812634737829807,
+      "decisions": 1100,
+      "advantage_std": 0.9638118743896484,
+      "clip_fraction": 0.029337993421052633
+    },
+    {
+      "update": 151,
+      "games": 4832,
+      "league_games": 2384,
+      "mean_terminal_reward": 0.9787573770491803,
+      "mean_return": 1.0239272713661194,
+      "mean_score": 54.73770491803279,
+      "win_rate": 0.20491803278688525,
+      "success_rate": 0.20491803278688525,
+      "policy_loss": -0.00479872269788757,
+      "value_loss": 0.8928117454051971,
+      "entropy": 0.24961113184690475,
+      "grad_norm": 0.7792151894046606,
+      "decisions": 1220,
+      "advantage_std": 0.9473959803581238,
+      "clip_fraction": 0.01966278698979592
+    },
+    {
+      "update": 152,
+      "games": 4864,
+      "league_games": 2399,
+      "mean_terminal_reward": 1.0631703081232493,
+      "mean_return": 1.236370962113142,
+      "mean_score": 55.7563025210084,
+      "win_rate": 0.24369747899159663,
+      "success_rate": 0.19327731092436976,
+      "policy_loss": -0.005351599305868149,
+      "value_loss": 0.880241933465004,
+      "entropy": 0.23097212314605714,
+      "grad_norm": 0.8486557136436659,
+      "decisions": 1190,
+      "advantage_std": 0.9420973062515259,
+      "clip_fraction": 0.0320336031626506
+    },
+    {
+      "update": 153,
+      "games": 4896,
+      "league_games": 2412,
+      "mean_terminal_reward": 1.022202985074627,
+      "mean_return": 1.1137981682550162,
+      "mean_score": 55.365671641791046,
+      "win_rate": 0.21641791044776118,
+      "success_rate": 0.2537313432835821,
+      "policy_loss": 0.006872541115929683,
+      "value_loss": 0.9262249370416006,
+      "entropy": 0.24539395421743393,
+      "grad_norm": 0.7720782017679285,
+      "decisions": 1340,
+      "advantage_std": 0.9631531834602356,
+      "clip_fraction": 0.03025173611111111
+    },
+    {
+      "update": 154,
+      "games": 4928,
+      "league_games": 2426,
+      "mean_terminal_reward": 1.0434918840579712,
+      "mean_return": 1.1049831733107567,
+      "mean_score": 55.65217391304348,
+      "win_rate": 0.24347826086956523,
+      "success_rate": 0.22608695652173913,
+      "policy_loss": -0.00819354122504592,
+      "value_loss": 0.9752020537853241,
+      "entropy": 0.24725649878382683,
+      "grad_norm": 0.7517939658293413,
+      "decisions": 1150,
+      "advantage_std": 0.9943031668663025,
+      "clip_fraction": 0.02470238095238095
+    },
+    {
+      "update": 155,
+      "games": 4960,
+      "league_games": 2445,
+      "mean_terminal_reward": 1.0270099999999998,
+      "mean_return": 1.1296428237983491,
+      "mean_score": 55.74545454545454,
+      "win_rate": 0.21818181818181817,
+      "success_rate": 0.23636363636363636,
+      "policy_loss": 0.012495096027851104,
+      "value_loss": 0.8786599963903428,
+      "entropy": 0.2559956878423691,
+      "grad_norm": 0.8398530709841185,
+      "decisions": 1100,
+      "advantage_std": 0.9488421678543091,
+      "clip_fraction": 0.02644942434210526
+    },
+    {
+      "update": 156,
+      "games": 4992,
+      "league_games": 2461,
+      "mean_terminal_reward": 0.9923213114754099,
+      "mean_return": 1.076943145133555,
+      "mean_score": 55.540983606557376,
+      "win_rate": 0.21311475409836064,
+      "success_rate": 0.22950819672131148,
+      "policy_loss": -0.0027284516487270593,
+      "value_loss": 0.811636108160019,
+      "entropy": 0.2809702232480049,
+      "grad_norm": 0.7080523135955545,
+      "decisions": 1220,
+      "advantage_std": 0.9022627472877502,
+      "clip_fraction": 0.016912468112244897
+    },
+    {
+      "update": 157,
+      "games": 5024,
+      "league_games": 2480,
+      "mean_terminal_reward": 1.085514478114478,
+      "mean_return": 1.2122780606150627,
+      "mean_score": 56.343434343434346,
+      "win_rate": 0.25252525252525254,
+      "success_rate": 0.29292929292929293,
+      "policy_loss": -0.005670434038620442,
+      "value_loss": 0.9672272615134716,
+      "entropy": 0.25550668872892857,
+      "grad_norm": 0.7372752472495764,
+      "decisions": 990,
+      "advantage_std": 0.9869328141212463,
+      "clip_fraction": 0.03541358741554054
+    },
+    {
+      "update": 158,
+      "games": 5056,
+      "league_games": 2497,
+      "mean_terminal_reward": 0.9804971128608924,
+      "mean_return": 1.1055533131584525,
+      "mean_score": 54.645669291338585,
+      "win_rate": 0.2125984251968504,
+      "success_rate": 0.16535433070866143,
+      "policy_loss": -0.006306789442896843,
+      "value_loss": 0.7983438551425934,
+      "entropy": 0.28399304002523423,
+      "grad_norm": 0.685965181295743,
+      "decisions": 1270,
+      "advantage_std": 0.8970776796340942,
+      "clip_fraction": 0.04810086382113821
+    },
+    {
+      "update": 159,
+      "games": 5088,
+      "league_games": 2513,
+      "mean_terminal_reward": 0.9487563025210085,
+      "mean_return": 0.9714617726858705,
+      "mean_score": 53.84033613445378,
+      "win_rate": 0.21008403361344538,
+      "success_rate": 0.17647058823529413,
+      "policy_loss": -0.006731462711468339,
+      "value_loss": 0.8537472784519196,
+      "entropy": 0.27424213141202924,
+      "grad_norm": 0.7143390397863454,
+      "decisions": 1190,
+      "advantage_std": 0.930415153503418,
+      "clip_fraction": 0.01584619728915663
+    },
+    {
+      "update": 160,
+      "games": 5120,
+      "league_games": 2529,
+      "mean_terminal_reward": 1.055471287128713,
+      "mean_return": 1.1567788529209793,
+      "mean_score": 55.02970297029703,
+      "win_rate": 0.25742574257425743,
+      "success_rate": 0.1782178217821782,
+      "policy_loss": -0.0037805605679750443,
+      "value_loss": 0.9488101489841938,
+      "entropy": 0.2576542692258954,
+      "grad_norm": 0.7056766043883794,
+      "decisions": 1010,
+      "advantage_std": 0.9778047800064087,
+      "clip_fraction": 0.013423698992768594
+    }
+  ],
+  "evaluations": [
+    {
+      "players": {
+        "3": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.875,
+            "top2_rate": 0.9583333333333334,
+            "mean_rank": 1.1666666666666667,
+            "mean_score": 64.25,
+            "success_rate": 0.4583333333333333,
+            "mean_margin": 10.375
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.5,
+            "top2_rate": 0.9166666666666666,
+            "mean_rank": 1.5833333333333333,
+            "mean_score": 45.833333333333336,
+            "success_rate": 0.0,
+            "mean_margin": 3.5
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.75,
+            "top2_rate": 1.0,
+            "mean_rank": 1.25,
+            "mean_score": 47.166666666666664,
+            "success_rate": 0.08333333333333333,
+            "mean_margin": 8.291666666666666
+          }
+        },
+        "4": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.5,
+            "top2_rate": 0.625,
+            "mean_rank": 2.2083333333333335,
+            "mean_score": 57.25,
+            "success_rate": 0.4583333333333333,
+            "mean_margin": 2.944444444444444
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.5833333333333334,
+            "top2_rate": 0.875,
+            "mean_rank": 1.625,
+            "mean_score": 48.208333333333336,
+            "success_rate": 0.041666666666666664,
+            "mean_margin": 4.777777777777778
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.7083333333333334,
+            "top2_rate": 0.8333333333333334,
+            "mean_rank": 1.5,
+            "mean_score": 52.333333333333336,
+            "success_rate": 0.16666666666666666,
+            "mean_margin": 12.694444444444445
+          }
+        },
+        "5": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.4583333333333333,
+            "top2_rate": 0.7083333333333334,
+            "mean_rank": 2.0833333333333335,
+            "mean_score": 61.708333333333336,
+            "success_rate": 0.5833333333333334,
+            "mean_margin": 6.447916666666667
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.25,
+            "top2_rate": 0.6666666666666666,
+            "mean_rank": 2.3333333333333335,
+            "mean_score": 49.458333333333336,
+            "success_rate": 0.16666666666666666,
+            "mean_margin": 5.375
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.375,
+            "top2_rate": 0.6666666666666666,
+            "mean_rank": 2.125,
+            "mean_score": 50.25,
+            "success_rate": 0.125,
+            "mean_margin": 7.052083333333333
+          }
+        },
+        "6": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.375,
+            "top2_rate": 0.625,
+            "mean_rank": 2.4166666666666665,
+            "mean_score": 61.25,
+            "success_rate": 0.4166666666666667,
+            "mean_margin": 6.041666666666668
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.4583333333333333,
+            "top2_rate": 0.75,
+            "mean_rank": 2.0833333333333335,
+            "mean_score": 51.0,
+            "success_rate": 0.20833333333333334,
+            "mean_margin": 8.416666666666666
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.125,
+            "top2_rate": 0.375,
+            "mean_rank": 3.0833333333333335,
+            "mean_score": 49.333333333333336,
+            "success_rate": 0.041666666666666664,
+            "mean_margin": 3.4250000000000003
+          }
+        },
+        "7": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.5,
+            "top2_rate": 0.6666666666666666,
+            "mean_rank": 2.4166666666666665,
+            "mean_score": 59.708333333333336,
+            "success_rate": 0.4583333333333333,
+            "mean_margin": 6.222222222222222
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.3333333333333333,
+            "top2_rate": 0.5416666666666666,
+            "mean_rank": 2.6666666666666665,
+            "mean_score": 50.541666666666664,
+            "success_rate": 0.16666666666666666,
+            "mean_margin": 7.874999999999999
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.16666666666666666,
+            "top2_rate": 0.3333333333333333,
+            "mean_rank": 3.0833333333333335,
+            "mean_score": 51.708333333333336,
+            "success_rate": 0.16666666666666666,
+            "mean_margin": 5.590277777777778
+          }
+        }
+      },
+      "summary": {
+        "greedy_win_rate": 0.5416666666666666,
+        "combo_win_rate": 0.425,
+        "supervised_win_rate": 0.425
+      },
+      "update": 10
+    },
+    {
+      "players": {
+        "3": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.5833333333333334,
+            "top2_rate": 0.8333333333333334,
+            "mean_rank": 1.5833333333333333,
+            "mean_score": 60.125,
+            "success_rate": 0.375,
+            "mean_margin": 6.125
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.6666666666666666,
+            "top2_rate": 1.0,
+            "mean_rank": 1.3333333333333333,
+            "mean_score": 50.541666666666664,
+            "success_rate": 0.041666666666666664,
+            "mean_margin": 7.416666666666667
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.875,
+            "top2_rate": 0.9583333333333334,
+            "mean_rank": 1.1666666666666667,
+            "mean_score": 50.166666666666664,
+            "success_rate": 0.16666666666666666,
+            "mean_margin": 11.604166666666666
+          }
+        },
+        "4": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.2916666666666667,
+            "top2_rate": 0.375,
+            "mean_rank": 2.8333333333333335,
+            "mean_score": 48.708333333333336,
+            "success_rate": 0.25,
+            "mean_margin": -4.416666666666665
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.7083333333333334,
+            "top2_rate": 0.875,
+            "mean_rank": 1.4166666666666667,
+            "mean_score": 54.625,
+            "success_rate": 0.20833333333333334,
+            "mean_margin": 11.361111111111114
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.7916666666666666,
+            "top2_rate": 0.9166666666666666,
+            "mean_rank": 1.3333333333333333,
+            "mean_score": 53.0,
+            "success_rate": 0.125,
+            "mean_margin": 13.083333333333334
+          }
+        },
+        "5": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.3333333333333333,
+            "top2_rate": 0.4166666666666667,
+            "mean_rank": 3.1666666666666665,
+            "mean_score": 54.208333333333336,
+            "success_rate": 0.2916666666666667,
+            "mean_margin": 0.4791666666666667
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.75,
+            "top2_rate": 0.875,
+            "mean_rank": 1.4166666666666667,
+            "mean_score": 58.916666666666664,
+            "success_rate": 0.4166666666666667,
+            "mean_margin": 14.916666666666666
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.625,
+            "top2_rate": 0.7916666666666666,
+            "mean_rank": 1.5833333333333333,
+            "mean_score": 56.958333333333336,
+            "success_rate": 0.3333333333333333,
+            "mean_margin": 13.09375
+          }
+        },
+        "6": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.16666666666666666,
+            "top2_rate": 0.375,
+            "mean_rank": 3.3333333333333335,
+            "mean_score": 54.333333333333336,
+            "success_rate": 0.16666666666666666,
+            "mean_margin": -0.008333333333333748
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.8333333333333334,
+            "top2_rate": 0.9583333333333334,
+            "mean_rank": 1.2916666666666667,
+            "mean_score": 61.166666666666664,
+            "success_rate": 0.5416666666666666,
+            "mean_margin": 19.358333333333338
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.375,
+            "top2_rate": 0.5833333333333334,
+            "mean_rank": 2.3333333333333335,
+            "mean_score": 55.708333333333336,
+            "success_rate": 0.20833333333333334,
+            "mean_margin": 11.666666666666666
+          }
+        },
+        "7": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.25,
+            "top2_rate": 0.375,
+            "mean_rank": 4.166666666666667,
+            "mean_score": 51.541666666666664,
+            "success_rate": 0.20833333333333334,
+            "mean_margin": -1.4513888888888893
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.7916666666666666,
+            "top2_rate": 0.9166666666666666,
+            "mean_rank": 1.4583333333333333,
+            "mean_score": 62.041666666666664,
+            "success_rate": 0.625,
+            "mean_margin": 18.888888888888886
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.375,
+            "top2_rate": 0.6666666666666666,
+            "mean_rank": 2.4583333333333335,
+            "mean_score": 54.75,
+            "success_rate": 0.25,
+            "mean_margin": 9.243055555555555
+          }
+        }
+      },
+      "summary": {
+        "greedy_win_rate": 0.325,
+        "combo_win_rate": 0.75,
+        "supervised_win_rate": 0.6083333333333333
+      },
+      "update": 20
+    },
+    {
+      "players": {
+        "3": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.5833333333333334,
+            "top2_rate": 0.75,
+            "mean_rank": 1.6666666666666667,
+            "mean_score": 56.75,
+            "success_rate": 0.25,
+            "mean_margin": 4.041666666666667
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.8333333333333334,
+            "top2_rate": 1.0,
+            "mean_rank": 1.1666666666666667,
+            "mean_score": 54.166666666666664,
+            "success_rate": 0.08333333333333333,
+            "mean_margin": 9.604166666666666
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.9166666666666666,
+            "top2_rate": 1.0,
+            "mean_rank": 1.0833333333333333,
+            "mean_score": 53.166666666666664,
+            "success_rate": 0.20833333333333334,
+            "mean_margin": 13.854166666666666
+          }
+        },
+        "4": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.20833333333333334,
+            "top2_rate": 0.4583333333333333,
+            "mean_rank": 2.8333333333333335,
+            "mean_score": 48.75,
+            "success_rate": 0.125,
+            "mean_margin": -3.2083333333333335
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.625,
+            "top2_rate": 0.9583333333333334,
+            "mean_rank": 1.4166666666666667,
+            "mean_score": 55.375,
+            "success_rate": 0.16666666666666666,
+            "mean_margin": 10.916666666666666
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.9166666666666666,
+            "top2_rate": 1.0,
+            "mean_rank": 1.0833333333333333,
+            "mean_score": 58.416666666666664,
+            "success_rate": 0.3333333333333333,
+            "mean_margin": 18.638888888888886
+          }
+        },
+        "5": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.25,
+            "top2_rate": 0.4583333333333333,
+            "mean_rank": 2.75,
+            "mean_score": 53.458333333333336,
+            "success_rate": 0.08333333333333333,
+            "mean_margin": 1.09375
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.875,
+            "top2_rate": 1.0,
+            "mean_rank": 1.125,
+            "mean_score": 61.875,
+            "success_rate": 0.75,
+            "mean_margin": 18.864583333333332
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.7916666666666666,
+            "top2_rate": 0.9166666666666666,
+            "mean_rank": 1.2916666666666667,
+            "mean_score": 60.791666666666664,
+            "success_rate": 0.5,
+            "mean_margin": 17.520833333333332
+          }
+        },
+        "6": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.08333333333333333,
+            "top2_rate": 0.375,
+            "mean_rank": 3.625,
+            "mean_score": 52.458333333333336,
+            "success_rate": 0.125,
+            "mean_margin": -1.1249999999999998
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.875,
+            "top2_rate": 1.0,
+            "mean_rank": 1.125,
+            "mean_score": 64.625,
+            "success_rate": 0.6666666666666666,
+            "mean_margin": 21.491666666666664
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.5416666666666666,
+            "top2_rate": 0.7916666666666666,
+            "mean_rank": 1.7916666666666667,
+            "mean_score": 61.333333333333336,
+            "success_rate": 0.5,
+            "mean_margin": 17.29166666666666
+          }
+        },
+        "7": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.125,
+            "top2_rate": 0.25,
+            "mean_rank": 4.5,
+            "mean_score": 49.416666666666664,
+            "success_rate": 0.0,
+            "mean_margin": -2.4791666666666665
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.9166666666666666,
+            "top2_rate": 0.9583333333333334,
+            "mean_rank": 1.125,
+            "mean_score": 68.45833333333333,
+            "success_rate": 0.7916666666666666,
+            "mean_margin": 25.881944444444443
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.625,
+            "top2_rate": 0.875,
+            "mean_rank": 1.625,
+            "mean_score": 61.166666666666664,
+            "success_rate": 0.6666666666666666,
+            "mean_margin": 16.243055555555554
+          }
+        }
+      },
+      "summary": {
+        "greedy_win_rate": 0.25,
+        "combo_win_rate": 0.825,
+        "supervised_win_rate": 0.7583333333333333
+      },
+      "update": 30
+    },
+    {
+      "players": {
+        "3": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.4166666666666667,
+            "top2_rate": 0.5833333333333334,
+            "mean_rank": 2.0,
+            "mean_score": 52.541666666666664,
+            "success_rate": 0.125,
+            "mean_margin": 0.8125
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.875,
+            "top2_rate": 1.0,
+            "mean_rank": 1.125,
+            "mean_score": 55.166666666666664,
+            "success_rate": 0.041666666666666664,
+            "mean_margin": 10.770833333333334
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.9166666666666666,
+            "top2_rate": 1.0,
+            "mean_rank": 1.0833333333333333,
+            "mean_score": 54.875,
+            "success_rate": 0.25,
+            "mean_margin": 14.9375
+          }
+        },
+        "4": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.20833333333333334,
+            "top2_rate": 0.5833333333333334,
+            "mean_rank": 2.4583333333333335,
+            "mean_score": 51.458333333333336,
+            "success_rate": 0.125,
+            "mean_margin": 0.3888888888888887
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.75,
+            "top2_rate": 1.0,
+            "mean_rank": 1.25,
+            "mean_score": 56.75,
+            "success_rate": 0.16666666666666666,
+            "mean_margin": 11.861111111111112
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.875,
+            "top2_rate": 0.9166666666666666,
+            "mean_rank": 1.2083333333333333,
+            "mean_score": 57.833333333333336,
+            "success_rate": 0.3333333333333333,
+            "mean_margin": 16.26388888888889
+          }
+        },
+        "5": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.08333333333333333,
+            "top2_rate": 0.375,
+            "mean_rank": 3.4166666666666665,
+            "mean_score": 49.666666666666664,
+            "success_rate": 0.041666666666666664,
+            "mean_margin": -2.03125
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.9166666666666666,
+            "top2_rate": 1.0,
+            "mean_rank": 1.0833333333333333,
+            "mean_score": 62.041666666666664,
+            "success_rate": 0.625,
+            "mean_margin": 19.0
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.7916666666666666,
+            "top2_rate": 0.9583333333333334,
+            "mean_rank": 1.25,
+            "mean_score": 60.541666666666664,
+            "success_rate": 0.5,
+            "mean_margin": 16.572916666666668
+          }
+        },
+        "6": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.16666666666666666,
+            "top2_rate": 0.2916666666666667,
+            "mean_rank": 3.75,
+            "mean_score": 52.041666666666664,
+            "success_rate": 0.125,
+            "mean_margin": -1.0166666666666664
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.9583333333333334,
+            "top2_rate": 1.0,
+            "mean_rank": 1.0416666666666667,
+            "mean_score": 67.75,
+            "success_rate": 0.8333333333333334,
+            "mean_margin": 24.75833333333333
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.7083333333333334,
+            "top2_rate": 0.875,
+            "mean_rank": 1.4583333333333333,
+            "mean_score": 63.583333333333336,
+            "success_rate": 0.625,
+            "mean_margin": 19.616666666666664
+          }
+        },
+        "7": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.25,
+            "top2_rate": 0.375,
+            "mean_rank": 3.75,
+            "mean_score": 51.916666666666664,
+            "success_rate": 0.125,
+            "mean_margin": 0.3611111111111107
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.9583333333333334,
+            "top2_rate": 1.0,
+            "mean_rank": 1.0416666666666667,
+            "mean_score": 68.41666666666667,
+            "success_rate": 0.8333333333333334,
+            "mean_margin": 25.909722222222225
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.6666666666666666,
+            "top2_rate": 0.9166666666666666,
+            "mean_rank": 1.5,
+            "mean_score": 61.75,
+            "success_rate": 0.6666666666666666,
+            "mean_margin": 16.9375
+          }
+        }
+      },
+      "summary": {
+        "greedy_win_rate": 0.225,
+        "combo_win_rate": 0.8916666666666666,
+        "supervised_win_rate": 0.7916666666666666
+      },
+      "update": 40
+    },
+    {
+      "players": {
+        "3": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.5833333333333334,
+            "top2_rate": 0.7916666666666666,
+            "mean_rank": 1.625,
+            "mean_score": 57.416666666666664,
+            "success_rate": 0.25,
+            "mean_margin": 5.6875
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.8333333333333334,
+            "top2_rate": 1.0,
+            "mean_rank": 1.1666666666666667,
+            "mean_score": 54.958333333333336,
+            "success_rate": 0.08333333333333333,
+            "mean_margin": 10.520833333333334
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.9166666666666666,
+            "top2_rate": 0.9583333333333334,
+            "mean_rank": 1.125,
+            "mean_score": 55.666666666666664,
+            "success_rate": 0.25,
+            "mean_margin": 15.375
+          }
+        },
+        "4": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.2916666666666667,
+            "top2_rate": 0.5,
+            "mean_rank": 2.4166666666666665,
+            "mean_score": 52.083333333333336,
+            "success_rate": 0.125,
+            "mean_margin": 1.3750000000000002
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.6666666666666666,
+            "top2_rate": 0.9583333333333334,
+            "mean_rank": 1.375,
+            "mean_score": 56.083333333333336,
+            "success_rate": 0.16666666666666666,
+            "mean_margin": 11.041666666666666
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.875,
+            "top2_rate": 0.9583333333333334,
+            "mean_rank": 1.1666666666666667,
+            "mean_score": 58.583333333333336,
+            "success_rate": 0.25,
+            "mean_margin": 17.86111111111111
+          }
+        },
+        "5": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.20833333333333334,
+            "top2_rate": 0.4583333333333333,
+            "mean_rank": 2.75,
+            "mean_score": 53.041666666666664,
+            "success_rate": 0.125,
+            "mean_margin": 2.0833333333333335
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.8333333333333334,
+            "top2_rate": 1.0,
+            "mean_rank": 1.1666666666666667,
+            "mean_score": 62.75,
+            "success_rate": 0.7916666666666666,
+            "mean_margin": 19.260416666666668
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.75,
+            "top2_rate": 0.9583333333333334,
+            "mean_rank": 1.2916666666666667,
+            "mean_score": 60.708333333333336,
+            "success_rate": 0.5416666666666666,
+            "mean_margin": 16.9375
+          }
+        },
+        "6": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.16666666666666666,
+            "top2_rate": 0.375,
+            "mean_rank": 3.4583333333333335,
+            "mean_score": 52.875,
+            "success_rate": 0.125,
+            "mean_margin": -0.28333333333333294
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.9583333333333334,
+            "top2_rate": 1.0,
+            "mean_rank": 1.0416666666666667,
+            "mean_score": 66.95833333333333,
+            "success_rate": 0.7916666666666666,
+            "mean_margin": 23.48333333333333
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.6666666666666666,
+            "top2_rate": 0.9166666666666666,
+            "mean_rank": 1.5,
+            "mean_score": 62.833333333333336,
+            "success_rate": 0.6666666666666666,
+            "mean_margin": 17.991666666666667
+          }
+        },
+        "7": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.25,
+            "top2_rate": 0.3333333333333333,
+            "mean_rank": 3.9166666666666665,
+            "mean_score": 51.416666666666664,
+            "success_rate": 0.08333333333333333,
+            "mean_margin": 0.1527777777777771
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.9166666666666666,
+            "top2_rate": 0.9583333333333334,
+            "mean_rank": 1.1666666666666667,
+            "mean_score": 69.04166666666667,
+            "success_rate": 0.75,
+            "mean_margin": 27.118055555555546
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.6666666666666666,
+            "top2_rate": 0.875,
+            "mean_rank": 1.5416666666666667,
+            "mean_score": 60.25,
+            "success_rate": 0.5833333333333334,
+            "mean_margin": 15.513888888888891
+          }
+        }
+      },
+      "summary": {
+        "greedy_win_rate": 0.3,
+        "combo_win_rate": 0.8416666666666668,
+        "supervised_win_rate": 0.7749999999999999
+      },
+      "update": 50
+    },
+    {
+      "players": {
+        "3": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.625,
+            "top2_rate": 0.875,
+            "mean_rank": 1.5,
+            "mean_score": 58.041666666666664,
+            "success_rate": 0.2916666666666667,
+            "mean_margin": 5.770833333333333
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.9166666666666666,
+            "top2_rate": 1.0,
+            "mean_rank": 1.0833333333333333,
+            "mean_score": 55.041666666666664,
+            "success_rate": 0.08333333333333333,
+            "mean_margin": 10.958333333333334
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.9166666666666666,
+            "top2_rate": 0.9583333333333334,
+            "mean_rank": 1.125,
+            "mean_score": 55.291666666666664,
+            "success_rate": 0.20833333333333334,
+            "mean_margin": 14.333333333333334
+          }
+        },
+        "4": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.2916666666666667,
+            "top2_rate": 0.7083333333333334,
+            "mean_rank": 2.0,
+            "mean_score": 55.166666666666664,
+            "success_rate": 0.20833333333333334,
+            "mean_margin": 3.4722222222222214
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.6666666666666666,
+            "top2_rate": 0.9583333333333334,
+            "mean_rank": 1.375,
+            "mean_score": 56.625,
+            "success_rate": 0.25,
+            "mean_margin": 10.583333333333334
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.8333333333333334,
+            "top2_rate": 0.9583333333333334,
+            "mean_rank": 1.2083333333333333,
+            "mean_score": 57.916666666666664,
+            "success_rate": 0.2916666666666667,
+            "mean_margin": 16.125
+          }
+        },
+        "5": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.20833333333333334,
+            "top2_rate": 0.5833333333333334,
+            "mean_rank": 2.625,
+            "mean_score": 53.708333333333336,
+            "success_rate": 0.20833333333333334,
+            "mean_margin": 2.1979166666666665
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.8333333333333334,
+            "top2_rate": 1.0,
+            "mean_rank": 1.1666666666666667,
+            "mean_score": 62.625,
+            "success_rate": 0.625,
+            "mean_margin": 19.28125
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.7916666666666666,
+            "top2_rate": 0.9583333333333334,
+            "mean_rank": 1.25,
+            "mean_score": 61.291666666666664,
+            "success_rate": 0.4583333333333333,
+            "mean_margin": 17.270833333333332
+          }
+        },
+        "6": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.041666666666666664,
+            "top2_rate": 0.25,
+            "mean_rank": 3.6666666666666665,
+            "mean_score": 52.333333333333336,
+            "success_rate": 0.125,
+            "mean_margin": -0.9416666666666664
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.9583333333333334,
+            "top2_rate": 1.0,
+            "mean_rank": 1.0416666666666667,
+            "mean_score": 66.91666666666667,
+            "success_rate": 0.8333333333333334,
+            "mean_margin": 23.45
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.6666666666666666,
+            "top2_rate": 0.8333333333333334,
+            "mean_rank": 1.5416666666666667,
+            "mean_score": 62.791666666666664,
+            "success_rate": 0.5833333333333334,
+            "mean_margin": 18.333333333333332
+          }
+        },
+        "7": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.2916666666666667,
+            "top2_rate": 0.4583333333333333,
+            "mean_rank": 3.5833333333333335,
+            "mean_score": 52.458333333333336,
+            "success_rate": 0.20833333333333334,
+            "mean_margin": 0.861111111111111
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.9166666666666666,
+            "top2_rate": 1.0,
+            "mean_rank": 1.0833333333333333,
+            "mean_score": 69.75,
+            "success_rate": 0.8333333333333334,
+            "mean_margin": 27.083333333333332
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.7083333333333334,
+            "top2_rate": 0.9166666666666666,
+            "mean_rank": 1.4583333333333333,
+            "mean_score": 61.458333333333336,
+            "success_rate": 0.5833333333333334,
+            "mean_margin": 16.722222222222225
+          }
+        }
+      },
+      "summary": {
+        "greedy_win_rate": 0.2916666666666667,
+        "combo_win_rate": 0.8583333333333334,
+        "supervised_win_rate": 0.7833333333333333
+      },
+      "update": 60
+    },
+    {
+      "players": {
+        "3": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.75,
+            "top2_rate": 0.9583333333333334,
+            "mean_rank": 1.2916666666666667,
+            "mean_score": 59.916666666666664,
+            "success_rate": 0.3333333333333333,
+            "mean_margin": 8.354166666666666
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.9166666666666666,
+            "top2_rate": 1.0,
+            "mean_rank": 1.0833333333333333,
+            "mean_score": 56.375,
+            "success_rate": 0.125,
+            "mean_margin": 11.6875
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.9166666666666666,
+            "top2_rate": 0.9583333333333334,
+            "mean_rank": 1.125,
+            "mean_score": 54.916666666666664,
+            "success_rate": 0.20833333333333334,
+            "mean_margin": 14.291666666666666
+          }
+        },
+        "4": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.5,
+            "top2_rate": 0.8333333333333334,
+            "mean_rank": 1.7083333333333333,
+            "mean_score": 56.833333333333336,
+            "success_rate": 0.25,
+            "mean_margin": 4.986111111111111
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.5833333333333334,
+            "top2_rate": 0.9166666666666666,
+            "mean_rank": 1.5,
+            "mean_score": 54.75,
+            "success_rate": 0.125,
+            "mean_margin": 8.319444444444445
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.8333333333333334,
+            "top2_rate": 0.9583333333333334,
+            "mean_rank": 1.2083333333333333,
+            "mean_score": 57.041666666666664,
+            "success_rate": 0.3333333333333333,
+            "mean_margin": 15.805555555555557
+          }
+        },
+        "5": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.25,
+            "top2_rate": 0.5416666666666666,
+            "mean_rank": 2.5416666666666665,
+            "mean_score": 54.583333333333336,
+            "success_rate": 0.20833333333333334,
+            "mean_margin": 2.9375
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.75,
+            "top2_rate": 0.9583333333333334,
+            "mean_rank": 1.3333333333333333,
+            "mean_score": 60.25,
+            "success_rate": 0.5,
+            "mean_margin": 17.0
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.75,
+            "top2_rate": 0.9583333333333334,
+            "mean_rank": 1.2916666666666667,
+            "mean_score": 60.5,
+            "success_rate": 0.5,
+            "mean_margin": 17.072916666666668
+          }
+        },
+        "6": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.08333333333333333,
+            "top2_rate": 0.25,
+            "mean_rank": 3.6666666666666665,
+            "mean_score": 52.125,
+            "success_rate": 0.16666666666666666,
+            "mean_margin": -0.7999999999999995
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.9583333333333334,
+            "top2_rate": 1.0,
+            "mean_rank": 1.0416666666666667,
+            "mean_score": 67.04166666666667,
+            "success_rate": 0.8333333333333334,
+            "mean_margin": 23.608333333333334
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.7916666666666666,
+            "top2_rate": 0.875,
+            "mean_rank": 1.375,
+            "mean_score": 63.666666666666664,
+            "success_rate": 0.6666666666666666,
+            "mean_margin": 19.416666666666664
+          }
+        },
+        "7": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.20833333333333334,
+            "top2_rate": 0.3333333333333333,
+            "mean_rank": 3.8333333333333335,
+            "mean_score": 52.416666666666664,
+            "success_rate": 0.125,
+            "mean_margin": 0.6736111111111113
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.8333333333333334,
+            "top2_rate": 0.9583333333333334,
+            "mean_rank": 1.25,
+            "mean_score": 66.33333333333333,
+            "success_rate": 0.75,
+            "mean_margin": 24.034722222222225
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.6666666666666666,
+            "top2_rate": 0.8333333333333334,
+            "mean_rank": 1.5416666666666667,
+            "mean_score": 59.375,
+            "success_rate": 0.5,
+            "mean_margin": 14.861111111111112
+          }
+        }
+      },
+      "summary": {
+        "greedy_win_rate": 0.3583333333333333,
+        "combo_win_rate": 0.8083333333333333,
+        "supervised_win_rate": 0.7916666666666666
+      },
+      "update": 70
+    },
+    {
+      "players": {
+        "3": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.625,
+            "top2_rate": 0.9166666666666666,
+            "mean_rank": 1.4583333333333333,
+            "mean_score": 58.666666666666664,
+            "success_rate": 0.2916666666666667,
+            "mean_margin": 6.583333333333333
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.75,
+            "top2_rate": 1.0,
+            "mean_rank": 1.25,
+            "mean_score": 53.916666666666664,
+            "success_rate": 0.125,
+            "mean_margin": 9.479166666666666
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.875,
+            "top2_rate": 0.9583333333333334,
+            "mean_rank": 1.1666666666666667,
+            "mean_score": 53.166666666666664,
+            "success_rate": 0.16666666666666666,
+            "mean_margin": 12.770833333333334
+          }
+        },
+        "4": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.4166666666666667,
+            "top2_rate": 0.75,
+            "mean_rank": 2.0,
+            "mean_score": 55.583333333333336,
+            "success_rate": 0.16666666666666666,
+            "mean_margin": 3.638888888888888
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.625,
+            "top2_rate": 0.9583333333333334,
+            "mean_rank": 1.4166666666666667,
+            "mean_score": 54.666666666666664,
+            "success_rate": 0.125,
+            "mean_margin": 9.27777777777778
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.8333333333333334,
+            "top2_rate": 1.0,
+            "mean_rank": 1.1666666666666667,
+            "mean_score": 56.625,
+            "success_rate": 0.3333333333333333,
+            "mean_margin": 15.819444444444443
+          }
+        },
+        "5": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.20833333333333334,
+            "top2_rate": 0.5833333333333334,
+            "mean_rank": 2.75,
+            "mean_score": 54.041666666666664,
+            "success_rate": 0.16666666666666666,
+            "mean_margin": 1.4166666666666667
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.7916666666666666,
+            "top2_rate": 0.9166666666666666,
+            "mean_rank": 1.375,
+            "mean_score": 59.083333333333336,
+            "success_rate": 0.5,
+            "mean_margin": 14.9375
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.625,
+            "top2_rate": 0.8333333333333334,
+            "mean_rank": 1.5416666666666667,
+            "mean_score": 59.458333333333336,
+            "success_rate": 0.4583333333333333,
+            "mean_margin": 15.322916666666666
+          }
+        },
+        "6": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.125,
+            "top2_rate": 0.4166666666666667,
+            "mean_rank": 2.7916666666666665,
+            "mean_score": 55.25,
+            "success_rate": 0.16666666666666666,
+            "mean_margin": 2.175
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.9583333333333334,
+            "top2_rate": 1.0,
+            "mean_rank": 1.0416666666666667,
+            "mean_score": 66.66666666666667,
+            "success_rate": 0.7916666666666666,
+            "mean_margin": 23.333333333333332
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.7083333333333334,
+            "top2_rate": 0.7916666666666666,
+            "mean_rank": 1.5416666666666667,
+            "mean_score": 62.625,
+            "success_rate": 0.5833333333333334,
+            "mean_margin": 17.958333333333336
+          }
+        },
+        "7": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.20833333333333334,
+            "top2_rate": 0.375,
+            "mean_rank": 4.083333333333333,
+            "mean_score": 51.375,
+            "success_rate": 0.20833333333333334,
+            "mean_margin": -0.4375000000000003
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.8333333333333334,
+            "top2_rate": 0.9583333333333334,
+            "mean_rank": 1.25,
+            "mean_score": 67.25,
+            "success_rate": 0.75,
+            "mean_margin": 24.506944444444443
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.5416666666666666,
+            "top2_rate": 0.75,
+            "mean_rank": 1.7916666666666667,
+            "mean_score": 58.208333333333336,
+            "success_rate": 0.4166666666666667,
+            "mean_margin": 13.604166666666666
+          }
+        }
+      },
+      "summary": {
+        "greedy_win_rate": 0.31666666666666665,
+        "combo_win_rate": 0.7916666666666667,
+        "supervised_win_rate": 0.7166666666666667
+      },
+      "update": 80
+    },
+    {
+      "players": {
+        "3": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.75,
+            "top2_rate": 0.9583333333333334,
+            "mean_rank": 1.2916666666666667,
+            "mean_score": 59.583333333333336,
+            "success_rate": 0.3333333333333333,
+            "mean_margin": 7.729166666666667
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.75,
+            "top2_rate": 1.0,
+            "mean_rank": 1.25,
+            "mean_score": 54.25,
+            "success_rate": 0.125,
+            "mean_margin": 9.666666666666666
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.9166666666666666,
+            "top2_rate": 1.0,
+            "mean_rank": 1.0833333333333333,
+            "mean_score": 53.083333333333336,
+            "success_rate": 0.125,
+            "mean_margin": 12.770833333333334
+          }
+        },
+        "4": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.375,
+            "top2_rate": 0.6666666666666666,
+            "mean_rank": 2.2083333333333335,
+            "mean_score": 54.833333333333336,
+            "success_rate": 0.20833333333333334,
+            "mean_margin": 2.944444444444444
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.5,
+            "top2_rate": 0.875,
+            "mean_rank": 1.625,
+            "mean_score": 54.583333333333336,
+            "success_rate": 0.125,
+            "mean_margin": 8.916666666666666
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.875,
+            "top2_rate": 1.0,
+            "mean_rank": 1.125,
+            "mean_score": 56.375,
+            "success_rate": 0.2916666666666667,
+            "mean_margin": 15.847222222222221
+          }
+        },
+        "5": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.25,
+            "top2_rate": 0.6666666666666666,
+            "mean_rank": 2.625,
+            "mean_score": 54.291666666666664,
+            "success_rate": 0.16666666666666666,
+            "mean_margin": 1.25
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.7083333333333334,
+            "top2_rate": 0.875,
+            "mean_rank": 1.5416666666666667,
+            "mean_score": 57.666666666666664,
+            "success_rate": 0.4166666666666667,
+            "mean_margin": 14.333333333333334
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.625,
+            "top2_rate": 0.7916666666666666,
+            "mean_rank": 1.5833333333333333,
+            "mean_score": 59.375,
+            "success_rate": 0.4166666666666667,
+            "mean_margin": 15.333333333333334
+          }
+        },
+        "6": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.125,
+            "top2_rate": 0.375,
+            "mean_rank": 3.1666666666666665,
+            "mean_score": 54.583333333333336,
+            "success_rate": 0.16666666666666666,
+            "mean_margin": 1.3833333333333335
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.9583333333333334,
+            "top2_rate": 1.0,
+            "mean_rank": 1.0416666666666667,
+            "mean_score": 66.45833333333333,
+            "success_rate": 0.8333333333333334,
+            "mean_margin": 23.38333333333333
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.7083333333333334,
+            "top2_rate": 0.7916666666666666,
+            "mean_rank": 1.625,
+            "mean_score": 62.708333333333336,
+            "success_rate": 0.625,
+            "mean_margin": 18.341666666666672
+          }
+        },
+        "7": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.25,
+            "top2_rate": 0.3333333333333333,
+            "mean_rank": 3.7083333333333335,
+            "mean_score": 53.25,
+            "success_rate": 0.125,
+            "mean_margin": 1.2569444444444444
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.875,
+            "top2_rate": 0.9583333333333334,
+            "mean_rank": 1.2083333333333333,
+            "mean_score": 67.5,
+            "success_rate": 0.7916666666666666,
+            "mean_margin": 23.77083333333333
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.5,
+            "top2_rate": 0.8333333333333334,
+            "mean_rank": 1.6666666666666667,
+            "mean_score": 58.75,
+            "success_rate": 0.4166666666666667,
+            "mean_margin": 14.409722222222223
+          }
+        }
+      },
+      "summary": {
+        "greedy_win_rate": 0.35,
+        "combo_win_rate": 0.7583333333333334,
+        "supervised_win_rate": 0.725
+      },
+      "update": 90
+    },
+    {
+      "players": {
+        "3": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.625,
+            "top2_rate": 0.9166666666666666,
+            "mean_rank": 1.4583333333333333,
+            "mean_score": 59.208333333333336,
+            "success_rate": 0.2916666666666667,
+            "mean_margin": 6.875
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.9166666666666666,
+            "top2_rate": 1.0,
+            "mean_rank": 1.0833333333333333,
+            "mean_score": 55.291666666666664,
+            "success_rate": 0.125,
+            "mean_margin": 11.333333333333334
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.9166666666666666,
+            "top2_rate": 1.0,
+            "mean_rank": 1.0833333333333333,
+            "mean_score": 53.25,
+            "success_rate": 0.125,
+            "mean_margin": 13.770833333333334
+          }
+        },
+        "4": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.5416666666666666,
+            "top2_rate": 0.7083333333333334,
+            "mean_rank": 1.875,
+            "mean_score": 56.125,
+            "success_rate": 0.20833333333333334,
+            "mean_margin": 4.569444444444443
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.625,
+            "top2_rate": 0.9583333333333334,
+            "mean_rank": 1.4583333333333333,
+            "mean_score": 55.416666666666664,
+            "success_rate": 0.20833333333333334,
+            "mean_margin": 9.90277777777778
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.7916666666666666,
+            "top2_rate": 1.0,
+            "mean_rank": 1.2083333333333333,
+            "mean_score": 55.791666666666664,
+            "success_rate": 0.2916666666666667,
+            "mean_margin": 14.541666666666666
+          }
+        },
+        "5": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.2916666666666667,
+            "top2_rate": 0.5416666666666666,
+            "mean_rank": 2.7083333333333335,
+            "mean_score": 54.291666666666664,
+            "success_rate": 0.25,
+            "mean_margin": 2.1458333333333335
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.75,
+            "top2_rate": 0.9166666666666666,
+            "mean_rank": 1.4166666666666667,
+            "mean_score": 59.0,
+            "success_rate": 0.5,
+            "mean_margin": 14.885416666666666
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.7083333333333334,
+            "top2_rate": 0.9583333333333334,
+            "mean_rank": 1.3333333333333333,
+            "mean_score": 60.083333333333336,
+            "success_rate": 0.4166666666666667,
+            "mean_margin": 16.34375
+          }
+        },
+        "6": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.125,
+            "top2_rate": 0.3333333333333333,
+            "mean_rank": 3.4583333333333335,
+            "mean_score": 53.125,
+            "success_rate": 0.16666666666666666,
+            "mean_margin": 0.3416666666666668
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 1.0,
+            "top2_rate": 1.0,
+            "mean_rank": 1.0,
+            "mean_score": 66.875,
+            "success_rate": 0.875,
+            "mean_margin": 24.133333333333336
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.6666666666666666,
+            "top2_rate": 0.75,
+            "mean_rank": 1.75,
+            "mean_score": 61.958333333333336,
+            "success_rate": 0.5833333333333334,
+            "mean_margin": 17.675
+          }
+        },
+        "7": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.25,
+            "top2_rate": 0.375,
+            "mean_rank": 3.625,
+            "mean_score": 53.375,
+            "success_rate": 0.125,
+            "mean_margin": 1.111111111111111
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.875,
+            "top2_rate": 0.9583333333333334,
+            "mean_rank": 1.2083333333333333,
+            "mean_score": 67.45833333333333,
+            "success_rate": 0.75,
+            "mean_margin": 23.36111111111111
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.5416666666666666,
+            "top2_rate": 0.7916666666666666,
+            "mean_rank": 1.6666666666666667,
+            "mean_score": 59.083333333333336,
+            "success_rate": 0.5416666666666666,
+            "mean_margin": 14.791666666666664
+          }
+        }
+      },
+      "summary": {
+        "greedy_win_rate": 0.36666666666666664,
+        "combo_win_rate": 0.8333333333333333,
+        "supervised_win_rate": 0.7249999999999999
+      },
+      "update": 100
+    },
+    {
+      "players": {
+        "3": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.625,
+            "top2_rate": 0.875,
+            "mean_rank": 1.5,
+            "mean_score": 58.083333333333336,
+            "success_rate": 0.3333333333333333,
+            "mean_margin": 6.458333333333333
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.8333333333333334,
+            "top2_rate": 1.0,
+            "mean_rank": 1.1666666666666667,
+            "mean_score": 55.875,
+            "success_rate": 0.125,
+            "mean_margin": 11.4375
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.8333333333333334,
+            "top2_rate": 0.9583333333333334,
+            "mean_rank": 1.2083333333333333,
+            "mean_score": 55.791666666666664,
+            "success_rate": 0.25,
+            "mean_margin": 15.375
+          }
+        },
+        "4": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.5,
+            "top2_rate": 0.875,
+            "mean_rank": 1.625,
+            "mean_score": 56.708333333333336,
+            "success_rate": 0.25,
+            "mean_margin": 5.597222222222221
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.5833333333333334,
+            "top2_rate": 0.9583333333333334,
+            "mean_rank": 1.5,
+            "mean_score": 55.333333333333336,
+            "success_rate": 0.20833333333333334,
+            "mean_margin": 9.597222222222223
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.7916666666666666,
+            "top2_rate": 1.0,
+            "mean_rank": 1.2083333333333333,
+            "mean_score": 55.125,
+            "success_rate": 0.3333333333333333,
+            "mean_margin": 14.388888888888888
+          }
+        },
+        "5": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.20833333333333334,
+            "top2_rate": 0.5,
+            "mean_rank": 2.875,
+            "mean_score": 53.875,
+            "success_rate": 0.16666666666666666,
+            "mean_margin": 1.96875
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.625,
+            "top2_rate": 0.9166666666666666,
+            "mean_rank": 1.5416666666666667,
+            "mean_score": 59.875,
+            "success_rate": 0.5416666666666666,
+            "mean_margin": 15.645833333333334
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.7916666666666666,
+            "top2_rate": 0.9583333333333334,
+            "mean_rank": 1.25,
+            "mean_score": 60.666666666666664,
+            "success_rate": 0.5416666666666666,
+            "mean_margin": 17.020833333333332
+          }
+        },
+        "6": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.2916666666666667,
+            "top2_rate": 0.375,
+            "mean_rank": 3.125,
+            "mean_score": 54.0,
+            "success_rate": 0.20833333333333334,
+            "mean_margin": 1.2833333333333332
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.9583333333333334,
+            "top2_rate": 1.0,
+            "mean_rank": 1.0416666666666667,
+            "mean_score": 67.125,
+            "success_rate": 0.75,
+            "mean_margin": 24.283333333333335
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.7083333333333334,
+            "top2_rate": 0.8333333333333334,
+            "mean_rank": 1.5833333333333333,
+            "mean_score": 62.916666666666664,
+            "success_rate": 0.625,
+            "mean_margin": 18.716666666666665
+          }
+        },
+        "7": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.3333333333333333,
+            "top2_rate": 0.4583333333333333,
+            "mean_rank": 3.2916666666666665,
+            "mean_score": 53.458333333333336,
+            "success_rate": 0.125,
+            "mean_margin": 1.5555555555555556
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.75,
+            "top2_rate": 0.9166666666666666,
+            "mean_rank": 1.375,
+            "mean_score": 66.875,
+            "success_rate": 0.7083333333333334,
+            "mean_margin": 22.951388888888886
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.5833333333333334,
+            "top2_rate": 0.875,
+            "mean_rank": 1.5416666666666667,
+            "mean_score": 59.625,
+            "success_rate": 0.5833333333333334,
+            "mean_margin": 15.243055555555555
+          }
+        }
+      },
+      "summary": {
+        "greedy_win_rate": 0.39166666666666666,
+        "combo_win_rate": 0.7500000000000001,
+        "supervised_win_rate": 0.7416666666666667
+      },
+      "update": 110
+    },
+    {
+      "players": {
+        "3": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.75,
+            "top2_rate": 0.875,
+            "mean_rank": 1.375,
+            "mean_score": 57.791666666666664,
+            "success_rate": 0.20833333333333334,
+            "mean_margin": 6.166666666666667
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.875,
+            "top2_rate": 1.0,
+            "mean_rank": 1.125,
+            "mean_score": 55.5,
+            "success_rate": 0.125,
+            "mean_margin": 11.145833333333334
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.9583333333333334,
+            "top2_rate": 1.0,
+            "mean_rank": 1.0416666666666667,
+            "mean_score": 56.083333333333336,
+            "success_rate": 0.2916666666666667,
+            "mean_margin": 15.958333333333334
+          }
+        },
+        "4": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.375,
+            "top2_rate": 0.7083333333333334,
+            "mean_rank": 2.0833333333333335,
+            "mean_score": 53.708333333333336,
+            "success_rate": 0.16666666666666666,
+            "mean_margin": 3.055555555555556
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.6666666666666666,
+            "top2_rate": 1.0,
+            "mean_rank": 1.3333333333333333,
+            "mean_score": 57.291666666666664,
+            "success_rate": 0.2916666666666667,
+            "mean_margin": 11.055555555555555
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.9166666666666666,
+            "top2_rate": 1.0,
+            "mean_rank": 1.0833333333333333,
+            "mean_score": 58.666666666666664,
+            "success_rate": 0.4166666666666667,
+            "mean_margin": 17.63888888888889
+          }
+        },
+        "5": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.4166666666666667,
+            "top2_rate": 0.5833333333333334,
+            "mean_rank": 2.4583333333333335,
+            "mean_score": 54.583333333333336,
+            "success_rate": 0.20833333333333334,
+            "mean_margin": 2.90625
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.7916666666666666,
+            "top2_rate": 1.0,
+            "mean_rank": 1.2083333333333333,
+            "mean_score": 62.541666666666664,
+            "success_rate": 0.7083333333333334,
+            "mean_margin": 18.8125
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.8333333333333334,
+            "top2_rate": 0.9583333333333334,
+            "mean_rank": 1.2083333333333333,
+            "mean_score": 61.333333333333336,
+            "success_rate": 0.5833333333333334,
+            "mean_margin": 18.09375
+          }
+        },
+        "6": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.16666666666666666,
+            "top2_rate": 0.4166666666666667,
+            "mean_rank": 3.3333333333333335,
+            "mean_score": 53.125,
+            "success_rate": 0.08333333333333333,
+            "mean_margin": 0.19166666666666732
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.9583333333333334,
+            "top2_rate": 1.0,
+            "mean_rank": 1.0416666666666667,
+            "mean_score": 67.5,
+            "success_rate": 0.875,
+            "mean_margin": 24.391666666666666
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.7916666666666666,
+            "top2_rate": 0.875,
+            "mean_rank": 1.375,
+            "mean_score": 63.541666666666664,
+            "success_rate": 0.6666666666666666,
+            "mean_margin": 19.10833333333333
+          }
+        },
+        "7": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.25,
+            "top2_rate": 0.5,
+            "mean_rank": 3.125,
+            "mean_score": 52.833333333333336,
+            "success_rate": 0.08333333333333333,
+            "mean_margin": 0.9166666666666666
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.875,
+            "top2_rate": 1.0,
+            "mean_rank": 1.125,
+            "mean_score": 66.83333333333333,
+            "success_rate": 0.75,
+            "mean_margin": 24.708333333333332
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.5833333333333334,
+            "top2_rate": 0.8333333333333334,
+            "mean_rank": 1.6666666666666667,
+            "mean_score": 59.958333333333336,
+            "success_rate": 0.5416666666666666,
+            "mean_margin": 15.520833333333336
+          }
+        }
+      },
+      "summary": {
+        "greedy_win_rate": 0.3916666666666667,
+        "combo_win_rate": 0.8333333333333333,
+        "supervised_win_rate": 0.8166666666666667
+      },
+      "update": 120
+    },
+    {
+      "players": {
+        "3": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.6666666666666666,
+            "top2_rate": 1.0,
+            "mean_rank": 1.3333333333333333,
+            "mean_score": 56.833333333333336,
+            "success_rate": 0.20833333333333334,
+            "mean_margin": 6.145833333333333
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.875,
+            "top2_rate": 1.0,
+            "mean_rank": 1.125,
+            "mean_score": 55.708333333333336,
+            "success_rate": 0.16666666666666666,
+            "mean_margin": 11.958333333333334
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.9583333333333334,
+            "top2_rate": 1.0,
+            "mean_rank": 1.0416666666666667,
+            "mean_score": 55.583333333333336,
+            "success_rate": 0.25,
+            "mean_margin": 14.9375
+          }
+        },
+        "4": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.5833333333333334,
+            "top2_rate": 0.7916666666666666,
+            "mean_rank": 1.7083333333333333,
+            "mean_score": 56.333333333333336,
+            "success_rate": 0.2916666666666667,
+            "mean_margin": 5.347222222222221
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.625,
+            "top2_rate": 0.9583333333333334,
+            "mean_rank": 1.4166666666666667,
+            "mean_score": 55.625,
+            "success_rate": 0.20833333333333334,
+            "mean_margin": 9.875000000000002
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.875,
+            "top2_rate": 1.0,
+            "mean_rank": 1.125,
+            "mean_score": 58.375,
+            "success_rate": 0.4166666666666667,
+            "mean_margin": 17.81944444444444
+          }
+        },
+        "5": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.3333333333333333,
+            "top2_rate": 0.5416666666666666,
+            "mean_rank": 2.5416666666666665,
+            "mean_score": 54.458333333333336,
+            "success_rate": 0.20833333333333334,
+            "mean_margin": 3.25
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.7916666666666666,
+            "top2_rate": 0.9583333333333334,
+            "mean_rank": 1.25,
+            "mean_score": 62.375,
+            "success_rate": 0.625,
+            "mean_margin": 18.489583333333332
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.875,
+            "top2_rate": 0.9583333333333334,
+            "mean_rank": 1.1666666666666667,
+            "mean_score": 61.666666666666664,
+            "success_rate": 0.5833333333333334,
+            "mean_margin": 19.239583333333332
+          }
+        },
+        "6": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.16666666666666666,
+            "top2_rate": 0.4166666666666667,
+            "mean_rank": 3.4583333333333335,
+            "mean_score": 52.375,
+            "success_rate": 0.125,
+            "mean_margin": -0.30000000000000043
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 1.0,
+            "top2_rate": 1.0,
+            "mean_rank": 1.0,
+            "mean_score": 66.625,
+            "success_rate": 0.8333333333333334,
+            "mean_margin": 23.650000000000002
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.7083333333333334,
+            "top2_rate": 0.875,
+            "mean_rank": 1.4583333333333333,
+            "mean_score": 62.708333333333336,
+            "success_rate": 0.5416666666666666,
+            "mean_margin": 18.266666666666666
+          }
+        },
+        "7": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.16666666666666666,
+            "top2_rate": 0.4166666666666667,
+            "mean_rank": 3.5,
+            "mean_score": 52.916666666666664,
+            "success_rate": 0.125,
+            "mean_margin": 1.3402777777777777
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.9166666666666666,
+            "top2_rate": 1.0,
+            "mean_rank": 1.0833333333333333,
+            "mean_score": 68.5,
+            "success_rate": 0.7916666666666666,
+            "mean_margin": 25.70138888888889
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.625,
+            "top2_rate": 0.8333333333333334,
+            "mean_rank": 1.625,
+            "mean_score": 59.125,
+            "success_rate": 0.4583333333333333,
+            "mean_margin": 14.451388888888888
+          }
+        }
+      },
+      "summary": {
+        "greedy_win_rate": 0.38333333333333336,
+        "combo_win_rate": 0.8416666666666666,
+        "supervised_win_rate": 0.8083333333333333
+      },
+      "update": 130
+    },
+    {
+      "players": {
+        "3": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.5833333333333334,
+            "top2_rate": 0.9583333333333334,
+            "mean_rank": 1.4583333333333333,
+            "mean_score": 57.791666666666664,
+            "success_rate": 0.25,
+            "mean_margin": 6.666666666666667
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.9166666666666666,
+            "top2_rate": 1.0,
+            "mean_rank": 1.0833333333333333,
+            "mean_score": 55.708333333333336,
+            "success_rate": 0.20833333333333334,
+            "mean_margin": 11.854166666666666
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.9583333333333334,
+            "top2_rate": 1.0,
+            "mean_rank": 1.0416666666666667,
+            "mean_score": 55.291666666666664,
+            "success_rate": 0.20833333333333334,
+            "mean_margin": 14.666666666666666
+          }
+        },
+        "4": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.5,
+            "top2_rate": 0.75,
+            "mean_rank": 1.875,
+            "mean_score": 57.083333333333336,
+            "success_rate": 0.3333333333333333,
+            "mean_margin": 5.375000000000001
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.5833333333333334,
+            "top2_rate": 0.9166666666666666,
+            "mean_rank": 1.5416666666666667,
+            "mean_score": 55.5,
+            "success_rate": 0.16666666666666666,
+            "mean_margin": 10.166666666666666
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.8333333333333334,
+            "top2_rate": 0.9583333333333334,
+            "mean_rank": 1.2083333333333333,
+            "mean_score": 56.291666666666664,
+            "success_rate": 0.2916666666666667,
+            "mean_margin": 15.416666666666666
+          }
+        },
+        "5": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.375,
+            "top2_rate": 0.5833333333333334,
+            "mean_rank": 2.4583333333333335,
+            "mean_score": 55.458333333333336,
+            "success_rate": 0.3333333333333333,
+            "mean_margin": 3.1666666666666665
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.7916666666666666,
+            "top2_rate": 0.9583333333333334,
+            "mean_rank": 1.3333333333333333,
+            "mean_score": 61.791666666666664,
+            "success_rate": 0.625,
+            "mean_margin": 17.375
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.7083333333333334,
+            "top2_rate": 0.9583333333333334,
+            "mean_rank": 1.3333333333333333,
+            "mean_score": 60.0,
+            "success_rate": 0.4583333333333333,
+            "mean_margin": 16.708333333333332
+          }
+        },
+        "6": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.2916666666666667,
+            "top2_rate": 0.5,
+            "mean_rank": 3.0,
+            "mean_score": 53.833333333333336,
+            "success_rate": 0.08333333333333333,
+            "mean_margin": 0.7499999999999997
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.9583333333333334,
+            "top2_rate": 1.0,
+            "mean_rank": 1.0416666666666667,
+            "mean_score": 66.20833333333333,
+            "success_rate": 0.875,
+            "mean_margin": 22.966666666666665
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.5416666666666666,
+            "top2_rate": 0.875,
+            "mean_rank": 1.625,
+            "mean_score": 62.416666666666664,
+            "success_rate": 0.625,
+            "mean_margin": 18.05
+          }
+        },
+        "7": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.16666666666666666,
+            "top2_rate": 0.375,
+            "mean_rank": 3.5833333333333335,
+            "mean_score": 53.166666666666664,
+            "success_rate": 0.16666666666666666,
+            "mean_margin": 1.763888888888889
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.875,
+            "top2_rate": 1.0,
+            "mean_rank": 1.125,
+            "mean_score": 67.70833333333333,
+            "success_rate": 0.75,
+            "mean_margin": 24.48611111111111
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.625,
+            "top2_rate": 0.8333333333333334,
+            "mean_rank": 1.625,
+            "mean_score": 58.625,
+            "success_rate": 0.4583333333333333,
+            "mean_margin": 13.9375
+          }
+        }
+      },
+      "summary": {
+        "greedy_win_rate": 0.3833333333333334,
+        "combo_win_rate": 0.825,
+        "supervised_win_rate": 0.7333333333333333
+      },
+      "update": 140
+    },
+    {
+      "players": {
+        "3": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.5,
+            "top2_rate": 0.9166666666666666,
+            "mean_rank": 1.5833333333333333,
+            "mean_score": 55.5,
+            "success_rate": 0.16666666666666666,
+            "mean_margin": 5.208333333333333
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.9166666666666666,
+            "top2_rate": 1.0,
+            "mean_rank": 1.0833333333333333,
+            "mean_score": 55.875,
+            "success_rate": 0.20833333333333334,
+            "mean_margin": 11.375
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.9166666666666666,
+            "top2_rate": 1.0,
+            "mean_rank": 1.0833333333333333,
+            "mean_score": 55.333333333333336,
+            "success_rate": 0.20833333333333334,
+            "mean_margin": 13.25
+          }
+        },
+        "4": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.5,
+            "top2_rate": 0.7916666666666666,
+            "mean_rank": 1.75,
+            "mean_score": 56.875,
+            "success_rate": 0.3333333333333333,
+            "mean_margin": 6.152777777777778
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.6666666666666666,
+            "top2_rate": 0.9166666666666666,
+            "mean_rank": 1.4166666666666667,
+            "mean_score": 56.0,
+            "success_rate": 0.16666666666666666,
+            "mean_margin": 11.611111111111112
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.8333333333333334,
+            "top2_rate": 0.875,
+            "mean_rank": 1.2916666666666667,
+            "mean_score": 56.375,
+            "success_rate": 0.20833333333333334,
+            "mean_margin": 14.95833333333333
+          }
+        },
+        "5": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.3333333333333333,
+            "top2_rate": 0.5416666666666666,
+            "mean_rank": 2.4166666666666665,
+            "mean_score": 56.208333333333336,
+            "success_rate": 0.3333333333333333,
+            "mean_margin": 3.96875
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.7083333333333334,
+            "top2_rate": 0.9583333333333334,
+            "mean_rank": 1.375,
+            "mean_score": 61.041666666666664,
+            "success_rate": 0.5416666666666666,
+            "mean_margin": 16.927083333333332
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.7916666666666666,
+            "top2_rate": 0.9583333333333334,
+            "mean_rank": 1.25,
+            "mean_score": 61.291666666666664,
+            "success_rate": 0.5416666666666666,
+            "mean_margin": 18.291666666666668
+          }
+        },
+        "6": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.25,
+            "top2_rate": 0.5,
+            "mean_rank": 3.0416666666666665,
+            "mean_score": 53.666666666666664,
+            "success_rate": 0.08333333333333333,
+            "mean_margin": 0.7166666666666665
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.9583333333333334,
+            "top2_rate": 1.0,
+            "mean_rank": 1.0416666666666667,
+            "mean_score": 66.875,
+            "success_rate": 0.8333333333333334,
+            "mean_margin": 23.549999999999997
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.5833333333333334,
+            "top2_rate": 0.8333333333333334,
+            "mean_rank": 1.625,
+            "mean_score": 62.583333333333336,
+            "success_rate": 0.6666666666666666,
+            "mean_margin": 18.225
+          }
+        },
+        "7": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.25,
+            "top2_rate": 0.4166666666666667,
+            "mean_rank": 3.125,
+            "mean_score": 54.5,
+            "success_rate": 0.20833333333333334,
+            "mean_margin": 2.6527777777777772
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.875,
+            "top2_rate": 1.0,
+            "mean_rank": 1.125,
+            "mean_score": 67.45833333333333,
+            "success_rate": 0.7083333333333334,
+            "mean_margin": 24.4375
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.6666666666666666,
+            "top2_rate": 0.9166666666666666,
+            "mean_rank": 1.5,
+            "mean_score": 58.958333333333336,
+            "success_rate": 0.4583333333333333,
+            "mean_margin": 14.597222222222223
+          }
+        }
+      },
+      "summary": {
+        "greedy_win_rate": 0.36666666666666664,
+        "combo_win_rate": 0.825,
+        "supervised_win_rate": 0.7583333333333333
+      },
+      "update": 150
+    },
+    {
+      "players": {
+        "3": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.5416666666666666,
+            "top2_rate": 0.8333333333333334,
+            "mean_rank": 1.625,
+            "mean_score": 56.0,
+            "success_rate": 0.125,
+            "mean_margin": 4.5625
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.875,
+            "top2_rate": 1.0,
+            "mean_rank": 1.125,
+            "mean_score": 55.916666666666664,
+            "success_rate": 0.20833333333333334,
+            "mean_margin": 11.604166666666666
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.8333333333333334,
+            "top2_rate": 1.0,
+            "mean_rank": 1.1666666666666667,
+            "mean_score": 55.625,
+            "success_rate": 0.20833333333333334,
+            "mean_margin": 13.291666666666666
+          }
+        },
+        "4": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.5,
+            "top2_rate": 0.75,
+            "mean_rank": 1.8333333333333333,
+            "mean_score": 55.416666666666664,
+            "success_rate": 0.20833333333333334,
+            "mean_margin": 4.749999999999999
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.6666666666666666,
+            "top2_rate": 0.9583333333333334,
+            "mean_rank": 1.4166666666666667,
+            "mean_score": 56.5,
+            "success_rate": 0.20833333333333334,
+            "mean_margin": 11.680555555555555
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.8333333333333334,
+            "top2_rate": 0.9166666666666666,
+            "mean_rank": 1.25,
+            "mean_score": 56.958333333333336,
+            "success_rate": 0.25,
+            "mean_margin": 16.166666666666668
+          }
+        },
+        "5": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.3333333333333333,
+            "top2_rate": 0.5416666666666666,
+            "mean_rank": 2.5,
+            "mean_score": 55.166666666666664,
+            "success_rate": 0.2916666666666667,
+            "mean_margin": 3.7604166666666665
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.7083333333333334,
+            "top2_rate": 0.9583333333333334,
+            "mean_rank": 1.375,
+            "mean_score": 62.583333333333336,
+            "success_rate": 0.6666666666666666,
+            "mean_margin": 18.489583333333332
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.7083333333333334,
+            "top2_rate": 0.9166666666666666,
+            "mean_rank": 1.375,
+            "mean_score": 60.041666666666664,
+            "success_rate": 0.4583333333333333,
+            "mean_margin": 16.958333333333332
+          }
+        },
+        "6": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.20833333333333334,
+            "top2_rate": 0.4166666666666667,
+            "mean_rank": 3.375,
+            "mean_score": 52.916666666666664,
+            "success_rate": 0.125,
+            "mean_margin": -0.15000000000000066
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.9166666666666666,
+            "top2_rate": 1.0,
+            "mean_rank": 1.0833333333333333,
+            "mean_score": 66.41666666666667,
+            "success_rate": 0.8333333333333334,
+            "mean_margin": 23.075000000000003
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.6666666666666666,
+            "top2_rate": 0.875,
+            "mean_rank": 1.5,
+            "mean_score": 62.333333333333336,
+            "success_rate": 0.625,
+            "mean_margin": 18.516666666666666
+          }
+        },
+        "7": {
+          "greedy": {
+            "games": 24,
+            "win_rate": 0.2916666666666667,
+            "top2_rate": 0.5,
+            "mean_rank": 3.0833333333333335,
+            "mean_score": 54.083333333333336,
+            "success_rate": 0.20833333333333334,
+            "mean_margin": 2.631944444444444
+          },
+          "combo": {
+            "games": 24,
+            "win_rate": 0.875,
+            "top2_rate": 1.0,
+            "mean_rank": 1.125,
+            "mean_score": 66.125,
+            "success_rate": 0.6666666666666666,
+            "mean_margin": 23.555555555555554
+          },
+          "supervised": {
+            "games": 24,
+            "win_rate": 0.625,
+            "top2_rate": 1.0,
+            "mean_rank": 1.375,
+            "mean_score": 60.125,
+            "success_rate": 0.5416666666666666,
+            "mean_margin": 15.465277777777784
+          }
+        }
+      },
+      "summary": {
+        "greedy_win_rate": 0.37499999999999994,
+        "combo_win_rate": 0.8083333333333332,
+        "supervised_win_rate": 0.7333333333333333
+      },
+      "update": 160
+    }
+  ],
+  "best_update": 120,
+  "best_score": 0.6933333333333334,
+  "seconds": 1252.82
+}

@@ -1,0 +1,3 @@
+# Optional: Telegram auto-chooser (eightfm telegram-assistant).
+# The rest of the project works without this dependency.
+telethon>=1.34
