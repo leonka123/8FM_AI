@@ -1411,25 +1411,25 @@ def train_lu_luna(
 
 
 # ---------------------------------------------------------------------------
-# The "absolute" configuration: the maximal Classic policy
+# lu_sol: the maximal Classic policy
 
 
-ABSOLUTE_OUTPUT = "models/lu_luna_absolute.json"
-ABSOLUTE_LATEST = "models/lu_luna_absolute-latest.json"
-ABSOLUTE_METRICS = "models/lu_luna_absolute-metrics.json"
-ABSOLUTE_PLOT = "plots/absolute-training.png"
+LU_SOL_OUTPUT = "models/lu_sol.json"
+LU_SOL_LATEST = "models/lu_sol-latest.json"
+LU_SOL_METRICS = "models/lu_sol-metrics.json"
+LU_SOL_PLOT = "plots/lu_sol-training.png"
 
-# Learning-rate and entropy endpoints for the full absolute schedule.  They
-# are module constants so external drivers (for example the Kaggle harness)
-# can re-derive the value at any global step and keep the anneal monotone
-# across resumed sessions.
-ABSOLUTE_LEARNING_RATE = 3e-4
-ABSOLUTE_LEARNING_RATE_FINAL = 2e-5
-ABSOLUTE_ENTROPY = 0.035
-ABSOLUTE_ENTROPY_FINAL = 0.003
+# Learning-rate and entropy endpoints for the full lu_sol schedule.  They are
+# module constants so external drivers (for example the Kaggle harness) can
+# re-derive the value at any global step and keep the anneal monotone across
+# resumed sessions.
+LU_SOL_LEARNING_RATE = 3e-4
+LU_SOL_LEARNING_RATE_FINAL = 2e-5
+LU_SOL_ENTROPY = 0.035
+LU_SOL_ENTROPY_FINAL = 0.003
 
 
-def train_absolute(
+def train_lu_sol(
     *,
     updates: int = 3000,
     games_per_update: int = 48,
@@ -1437,13 +1437,13 @@ def train_absolute(
     seed: int = 8_2026,
     warm_start_games: int = 6000,
     bc_epochs: int = 16,
-    learning_rate: float = ABSOLUTE_LEARNING_RATE,
-    learning_rate_final: float | None = ABSOLUTE_LEARNING_RATE_FINAL,
+    learning_rate: float = LU_SOL_LEARNING_RATE,
+    learning_rate_final: float | None = LU_SOL_LEARNING_RATE_FINAL,
     batch_size: int = 1024,
     ppo_epochs: int = 8,
     clip_ratio: float = 0.2,
-    entropy_coef: float = ABSOLUTE_ENTROPY,
-    entropy_coef_final: float | None = ABSOLUTE_ENTROPY_FINAL,
+    entropy_coef: float = LU_SOL_ENTROPY,
+    entropy_coef_final: float | None = LU_SOL_ENTROPY_FINAL,
     value_coef: float = 0.5,
     value_clip: float = 0.2,
     huber_delta: float = 1.0,
@@ -1455,7 +1455,7 @@ def train_absolute(
     selection_opponent_path: str | Path | None = "models/classic-rl.json",
     head_to_head_games: int = 40,
     checkpoint_every: int = 25,
-    checkpoint_dir: str | Path | None = "models/lu_luna_absolute-checkpoints",
+    checkpoint_dir: str | Path | None = "models/lu_sol-checkpoints",
     hidden1: int = 512,
     hidden2: int = 256,
     action_hidden: int = 256,
@@ -1465,18 +1465,18 @@ def train_absolute(
     eval_games: int = 60,
     eval_seed_base: int = 50000,
     supervised_model: PolicyModel | None = None,
-    output: str | Path = ABSOLUTE_OUTPUT,
-    latest_path: str | Path | None = ABSOLUTE_LATEST,
-    metrics_path: str | Path = ABSOLUTE_METRICS,
-    plot_path: str | Path | None = ABSOLUTE_PLOT,
+    output: str | Path = LU_SOL_OUTPUT,
+    latest_path: str | Path | None = LU_SOL_LATEST,
+    metrics_path: str | Path = LU_SOL_METRICS,
+    plot_path: str | Path | None = LU_SOL_PLOT,
     resume: str | Path | None = None,
     verbose: bool = True,
 ) -> tuple[RLNetwork, dict[str, Any]]:
-    """Train the "absolute" Classic policy: the largest recipe in the project.
+    """Train ``lu_sol``: the maximal Classic policy in the project.
 
     Where :func:`train_lu_luna` is the strong-single-machine configuration,
-    ``train_absolute`` is meant to be run on external compute (Kaggle) and
-    turns every knob up:
+    ``train_lu_sol`` is meant to be run on external compute (Kaggle) and turns
+    every knob up:
 
     * feature layout ``v2`` -- combo progress, closed-card economics, turn and
       board pressure, Alexey pressure and success-threshold signals on top of
@@ -1524,7 +1524,7 @@ def train_absolute(
         action_hidden=action_hidden,
         feature_version=feature_version,
         workers=workers,
-        title="8ФМ Classic RL training — absolute",
+        title="8ФМ Classic RL training — lu_sol",
         eval_every=eval_every,
         eval_games=eval_games,
         eval_seed_base=eval_seed_base,
@@ -1536,6 +1536,10 @@ def train_absolute(
         resume=resume,
         verbose=verbose,
     )
+
+
+# Backwards-compatible alias: the preset used to be called train_absolute.
+train_absolute = train_lu_sol
 
 
 # ---------------------------------------------------------------------------

@@ -165,51 +165,52 @@ def main() -> int:
     lu_luna_parser.add_argument("--metrics", default="models/lu_luna-metrics.json")
     lu_luna_parser.add_argument("--plot", default="plots/lu_luna-training.png")
     lu_luna_parser.add_argument("--resume", help="Continue from a lu_luna checkpoint")
-    absolute_parser = subparsers.add_parser(
-        "train-absolute",
-        help="Train the maximal 'absolute' policy (rich v2 features, 512/256 net); built for Kaggle",
+    lu_sol_parser = subparsers.add_parser(
+        "train-lu-sol",
+        aliases=["train-absolute"],
+        help="Train lu_sol, the maximal policy (rich v2 features, 512/256 net); built for Kaggle",
     )
-    absolute_parser.add_argument("--updates", type=int, default=3000)
-    absolute_parser.add_argument("--games-per-update", type=int, default=48)
-    absolute_parser.add_argument("--players", default="3,4,5,6,7", help="Comma-separated player counts")
-    absolute_parser.add_argument("--seed", type=int, default=82026)
-    absolute_parser.add_argument("--warm-start-games", type=int, default=6000)
-    absolute_parser.add_argument("--bc-epochs", type=int, default=16)
-    absolute_parser.add_argument("--learning-rate", type=float, default=3e-4)
-    absolute_parser.add_argument("--learning-rate-final", type=float, default=2e-5)
-    absolute_parser.add_argument("--batch-size", type=int, default=1024)
-    absolute_parser.add_argument("--ppo-epochs", type=int, default=8)
-    absolute_parser.add_argument("--clip-ratio", type=float, default=0.2)
-    absolute_parser.add_argument("--entropy-coef", type=float, default=0.035)
-    absolute_parser.add_argument("--entropy-coef-final", type=float, default=0.003)
-    absolute_parser.add_argument("--value-clip", type=float, default=0.2)
-    absolute_parser.add_argument("--huber-delta", type=float, default=1.0)
-    absolute_parser.add_argument("--target-kl", type=float, default=0.03)
-    absolute_parser.add_argument("--league-fraction", type=float, default=0.65)
-    absolute_parser.add_argument("--snapshot-every", type=int, default=25)
-    absolute_parser.add_argument("--snapshot-pool-size", type=int, default=12)
-    absolute_parser.add_argument(
+    lu_sol_parser.add_argument("--updates", type=int, default=3000)
+    lu_sol_parser.add_argument("--games-per-update", type=int, default=48)
+    lu_sol_parser.add_argument("--players", default="3,4,5,6,7", help="Comma-separated player counts")
+    lu_sol_parser.add_argument("--seed", type=int, default=82026)
+    lu_sol_parser.add_argument("--warm-start-games", type=int, default=6000)
+    lu_sol_parser.add_argument("--bc-epochs", type=int, default=16)
+    lu_sol_parser.add_argument("--learning-rate", type=float, default=3e-4)
+    lu_sol_parser.add_argument("--learning-rate-final", type=float, default=2e-5)
+    lu_sol_parser.add_argument("--batch-size", type=int, default=1024)
+    lu_sol_parser.add_argument("--ppo-epochs", type=int, default=8)
+    lu_sol_parser.add_argument("--clip-ratio", type=float, default=0.2)
+    lu_sol_parser.add_argument("--entropy-coef", type=float, default=0.035)
+    lu_sol_parser.add_argument("--entropy-coef-final", type=float, default=0.003)
+    lu_sol_parser.add_argument("--value-clip", type=float, default=0.2)
+    lu_sol_parser.add_argument("--huber-delta", type=float, default=1.0)
+    lu_sol_parser.add_argument("--target-kl", type=float, default=0.03)
+    lu_sol_parser.add_argument("--league-fraction", type=float, default=0.65)
+    lu_sol_parser.add_argument("--snapshot-every", type=int, default=25)
+    lu_sol_parser.add_argument("--snapshot-pool-size", type=int, default=12)
+    lu_sol_parser.add_argument(
         "--selection-opponent",
         default="models/classic-rl.json",
         help="Reigning champion the best checkpoint must also beat head-to-head",
     )
-    absolute_parser.add_argument("--head-to-head-games", type=int, default=40)
-    absolute_parser.add_argument("--checkpoint-every", type=int, default=25)
-    absolute_parser.add_argument("--checkpoint-dir", default="models/lu_luna_absolute-checkpoints")
-    absolute_parser.add_argument("--hidden1", type=int, default=512)
-    absolute_parser.add_argument("--hidden2", type=int, default=256)
-    absolute_parser.add_argument("--action-hidden", type=int, default=256)
-    absolute_parser.add_argument("--eval-every", type=int, default=50)
-    absolute_parser.add_argument("--eval-games", type=int, default=60)
-    absolute_parser.add_argument("--eval-seed-base", type=int, default=50000)
-    absolute_parser.add_argument("--feature-version", type=int, default=2, choices=(1, 2), help="State/action feature layout (2 = richer)")
-    absolute_parser.add_argument("--workers", type=int, default=1, help="Parallel rollout processes (Kaggle/Linux recommended)")
-    absolute_parser.add_argument("--supervised-model", default="models/classic-policy.json")
-    absolute_parser.add_argument("--output", default="models/lu_luna_absolute.json")
-    absolute_parser.add_argument("--latest", default="models/lu_luna_absolute-latest.json")
-    absolute_parser.add_argument("--metrics", default="models/lu_luna_absolute-metrics.json")
-    absolute_parser.add_argument("--plot", default="plots/absolute-training.png")
-    absolute_parser.add_argument("--resume", help="Continue from an absolute checkpoint (keeps its feature layout)")
+    lu_sol_parser.add_argument("--head-to-head-games", type=int, default=40)
+    lu_sol_parser.add_argument("--checkpoint-every", type=int, default=25)
+    lu_sol_parser.add_argument("--checkpoint-dir", default="models/lu_sol-checkpoints")
+    lu_sol_parser.add_argument("--hidden1", type=int, default=512)
+    lu_sol_parser.add_argument("--hidden2", type=int, default=256)
+    lu_sol_parser.add_argument("--action-hidden", type=int, default=256)
+    lu_sol_parser.add_argument("--eval-every", type=int, default=50)
+    lu_sol_parser.add_argument("--eval-games", type=int, default=60)
+    lu_sol_parser.add_argument("--eval-seed-base", type=int, default=50000)
+    lu_sol_parser.add_argument("--feature-version", type=int, default=2, choices=(1, 2), help="State/action feature layout (2 = richer)")
+    lu_sol_parser.add_argument("--workers", type=int, default=1, help="Parallel rollout processes (Kaggle/Linux recommended)")
+    lu_sol_parser.add_argument("--supervised-model", default="models/classic-policy.json")
+    lu_sol_parser.add_argument("--output", default="models/lu_sol.json")
+    lu_sol_parser.add_argument("--latest", default="models/lu_sol-latest.json")
+    lu_sol_parser.add_argument("--metrics", default="models/lu_sol-metrics.json")
+    lu_sol_parser.add_argument("--plot", default="plots/lu_sol-training.png")
+    lu_sol_parser.add_argument("--resume", help="Continue from a lu_sol checkpoint (keeps its feature layout)")
     rl_play_parser = subparsers.add_parser(
         "play-rl",
         help="Rank visible cards with the self-play RL policy; never submits a move",
@@ -440,8 +441,8 @@ def main() -> int:
         print(f"Elapsed: {metrics.get('seconds', 0):.1f}s")
         return 0
 
-    if args.command == "train-absolute":
-        from .rl_train import train_absolute
+    if args.command in ("train-lu-sol", "train-absolute"):
+        from .rl_train import train_lu_sol
 
         try:
             player_counts = _parse_player_counts(args.players)
@@ -451,7 +452,7 @@ def main() -> int:
             warm_start_games = args.warm_start_games
             if args.resume:
                 warm_start_games = 0
-            net, metrics = train_absolute(
+            net, metrics = train_lu_sol(
                 updates=args.updates,
                 games_per_update=args.games_per_update,
                 player_counts=player_counts,
@@ -491,7 +492,7 @@ def main() -> int:
                 resume=args.resume,
             )
         except (OSError, ValueError, RuntimeError) as error:
-            print(f"Absolute training failed: {error}", file=sys.stderr)
+            print(f"lu_sol training failed: {error}", file=sys.stderr)
             return 2
         print(
             f"Best checkpoint: {args.output} "

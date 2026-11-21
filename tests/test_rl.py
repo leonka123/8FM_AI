@@ -33,7 +33,7 @@ from eightfm.rl_train import (
     rank_checkpoints,
     rank_message_actions,
     rl_update,
-    train_absolute,
+    train_lu_sol,
     train_lu_luna,
 )
 
@@ -87,10 +87,10 @@ class NetworkTests(unittest.TestCase):
         self.assertGreater(state_feature_size(2), state_feature_size(1))
         self.assertGreater(action_feature_size(2), action_feature_size(1))
 
-    def test_absolute_preset_is_the_maximal_recipe(self):
+    def test_lu_sol_preset_is_the_maximal_recipe(self):
         import inspect
 
-        signature = inspect.signature(train_absolute)
+        signature = inspect.signature(train_lu_sol)
         params = signature.parameters
         self.assertEqual(params["feature_version"].default, 2)
         self.assertEqual(params["updates"].default, 3000)
@@ -316,10 +316,10 @@ class LuLunaTests(unittest.TestCase):
 
 
 class AbsoluteTests(unittest.TestCase):
-    def test_train_absolute_uses_v2_features_with_a_tiny_config(self):
+    def test_train_lu_sol_uses_v2_features_with_a_tiny_config(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            net, metrics = train_absolute(
+            net, metrics = train_lu_sol(
                 updates=1,
                 games_per_update=1,
                 player_counts=(3,),
@@ -334,7 +334,7 @@ class AbsoluteTests(unittest.TestCase):
                 checkpoint_every=0,
                 checkpoint_dir=None,
                 verbose=False,
-                output=root / "absolute.json",
+                output=root / "lu_sol.json",
                 latest_path=root / "latest.json",
                 metrics_path=root / "metrics.json",
                 plot_path=None,
@@ -350,7 +350,7 @@ class AbsoluteTests(unittest.TestCase):
     def test_resume_keeps_feature_version(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            first, _ = train_absolute(
+            first, _ = train_lu_sol(
                 updates=1,
                 games_per_update=1,
                 player_counts=(3,),
@@ -365,12 +365,12 @@ class AbsoluteTests(unittest.TestCase):
                 checkpoint_every=0,
                 checkpoint_dir=None,
                 verbose=False,
-                output=root / "absolute.json",
+                output=root / "lu_sol.json",
                 latest_path=root / "latest.json",
                 metrics_path=root / "metrics.json",
                 plot_path=None,
             )
-            resumed, metrics = train_absolute(
+            resumed, metrics = train_lu_sol(
                 updates=1,
                 games_per_update=1,
                 player_counts=(3,),
@@ -386,7 +386,7 @@ class AbsoluteTests(unittest.TestCase):
                 checkpoint_dir=None,
                 verbose=False,
                 resume=root / "latest.json",
-                output=root / "absolute.json",
+                output=root / "lu_sol.json",
                 latest_path=root / "latest.json",
                 metrics_path=root / "metrics.json",
                 plot_path=None,

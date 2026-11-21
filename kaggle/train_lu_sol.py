@@ -1,14 +1,14 @@
-"""Resumable driver that trains the "absolute" 8FM policy on external compute.
+"""Resumable driver that trains the ``lu_sol`` 8FM policy on external compute.
 
 The problem this solves
 -----------------------
 Training the maximal Classic policy needs many hours of CPU, which is painful
-on a laptop but cheap on Kaggle (about 4 vCPU and ~12 h per session, 30 h per
-week).  A single Kaggle session is *not* long enough for the whole run, so this
-driver trains in time-budgeted **chunks** and keeps enough state on disk that
-the next session continues exactly where the previous one stopped:
+on a laptop but cheap on Kaggle (about 4 vCPU and ~12 h per session).  A single
+Kaggle session is *not* long enough for the whole run, so this driver trains in
+time-budgeted **chunks** and keeps enough state on disk that the next session
+continues exactly where the previous one stopped:
 
-* the latest weights (:func:`eightfm.rl_train.train_absolute` writes them every
+* the latest weights (:func:`eightfm.rl_train.train_lu_sol` writes them every
   few updates) are the resume point;
 * a small ``driver_state.json`` records the global update counter and the best
   score so far, so the learning-rate / entropy anneal stays **monotone** across
@@ -19,7 +19,7 @@ Typical Kaggle use::
 
     git clone https://github.com/leonka123/8FM_AI repo
     cd repo
-    python kaggle/train_absolute.py --work-dir /kaggle/working --workers 4 \
+    python kaggle/train_lu_sol.py --work-dir /kaggle/working --workers 4 \
         --total-updates 6000 --time-budget-seconds 30000
 
 Re-running the same command in the next session resumes automatically.
@@ -112,7 +112,7 @@ def _merge_metrics(target: Path, chunk: dict, global_start: int) -> None:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Resumable training driver for the 'absolute' 8FM policy."
+        description="Resumable training driver for the 'lu_sol' 8FM policy."
     )
     parser.add_argument(
         "--repo", default=None,
@@ -151,23 +151,23 @@ def main(argv: list[str] | None = None) -> int:
 
     # Imported only after sys.path is fixed.
     from eightfm.rl_train import (  # noqa: E402
-        ABSOLUTE_ENTROPY,
-        ABSOLUTE_ENTROPY_FINAL,
-        ABSOLUTE_LEARNING_RATE,
-        ABSOLUTE_LEARNING_RATE_FINAL,
-        train_absolute,
+        LU_SOL_ENTROPY,
+        LU_SOL_ENTROPY_FINAL,
+        LU_SOL_LEARNING_RATE,
+        LU_SOL_LEARNING_RATE_FINAL,
+        train_lu_sol,
     )
 
     work = Path(args.work_dir)
     work.mkdir(parents=True, exist_ok=True)
 
-    best_path = work / "lu_luna_absolute.json"
-    latest_path = work / "lu_luna_absolute-latest.json"
+    best_path = work / "lu_sol.json"
+    latest_path = work / "lu_sol-latest.json"
     # The per-chunk call writes its in-chunk best here; the driver folds it
     # into the global best so a weak later chunk cannot overwrite a strong one.
     chunk_best_path = work / ".chunk-best.json"
     chunk_metrics_path = work / ".chunk-metrics.json"
-    combined_metrics_path = work / "lu_luna_absolute-metrics.json"
+    combined_metrics_path = work / "lu_sol-metrics.json"
     checkpoint_dir = work / "checkpoints"
     state_path = work / "driver_state.json"
 
@@ -181,7 +181,7 @@ def main(argv: list[str] | None = None) -> int:
     best_score = float(state.get("best_score", float("-inf")))
 
     print("=" * 68)
-    print(" 8FM absolute policy — resumable training driver")
+    print(" lu_sol — resumable training driver")
     print(f" repo         : {repo}")
     print(f" work dir     : {work}")
     print(f" resume step  : {global_step}/{args.total_updates}")
@@ -212,10 +212,10 @@ def main(argv: list[str] | None = None) -> int:
 
         chunk = min(args.chunk_updates, args.total_updates - global_step)
         span = max(1, args.total_updates)
-        lr_start = _lerp(ABSOLUTE_LEARNING_RATE, ABSOLUTE_LEARNING_RATE_FINAL, global_step / span)
-        lr_end = _lerp(ABSOLUTE_LEARNING_RATE, ABSOLUTE_LEARNING_RATE_FINAL, (global_step + chunk) / span)
-        ent_start = _lerp(ABSOLUTE_ENTROPY, ABSOLUTE_ENTROPY_FINAL, global_step / span)
-        ent_end = _lerp(ABSOLUTE_ENTROPY, ABSOLUTE_ENTROPY_FINAL, (global_step + chunk) / span)
+        lr_start = _lerp(LU_SOL_LEARNING_RATE, LU_SOL_LEARNING_RATE_FINAL, global_step / span)
+        lr_end = _lerp(LU_SOL_LEARNING_RATE, LU_SOL_LEARNING_RATE_FINAL, (global_step + chunk) / span)
+        ent_start = _lerp(LU_SOL_ENTROPY, LU_SOL_ENTROPY_FINAL, global_step / span)
+        ent_end = _lerp(LU_SOL_ENTROPY, LU_SOL_ENTROPY_FINAL, (global_step + chunk) / span)
 
         resume = str(latest_path) if latest_path.exists() else None
         warm_start = args.warm_start_games if (first_chunk and resume is None) else 0
@@ -227,7 +227,7 @@ def main(argv: list[str] | None = None) -> int:
             f"warm_start={warm_start}, resume={'yes' if resume else 'no'})"
         )
 
-        _, metrics = train_absolute(
+        _, metrics = train_lu_sol(
             updates=chunk,
             games_per_update=args.games_per_update,
             seed=args.seed,

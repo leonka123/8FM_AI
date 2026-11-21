@@ -6,9 +6,9 @@ import tempfile
 import unittest
 from pathlib import Path
 
-_DRIVER_PATH = Path(__file__).resolve().parents[1] / "kaggle" / "train_absolute.py"
+_DRIVER_PATH = Path(__file__).resolve().parents[1] / "kaggle" / "train_lu_sol.py"
 
-_spec = importlib.util.spec_from_file_location("kaggle_train_absolute", _DRIVER_PATH)
+_spec = importlib.util.spec_from_file_location("kaggle_train_lu_sol", _DRIVER_PATH)
 driver = importlib.util.module_from_spec(_spec)
 assert _spec and _spec.loader
 _spec.loader.exec_module(driver)
