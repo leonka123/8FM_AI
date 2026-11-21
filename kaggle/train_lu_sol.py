@@ -15,12 +15,18 @@ continues exactly where the previous one stopped:
   sessions instead of restarting every time;
 * the globally-best checkpoint is kept separately from the latest one.
 
-Typical Kaggle use::
+Typical Kaggle use (GPU accelerator, Internet On)::
 
     git clone https://github.com/leonka123/8FM_AI repo
     cd repo
-    python kaggle/train_lu_sol.py --work-dir /kaggle/working --workers 4 \
-        --total-updates 6000 --time-budget-seconds 30000
+    python kaggle/train_lu_sol.py --work-dir /kaggle/working --backend torch \
+        --device cuda --total-updates 6000 --time-budget-seconds 30000
+
+The torch backend is a vectorised simulator plus a PyTorch PPO trainer, so it
+uses the GPU when one is available and falls back to CPU otherwise.  The
+exported checkpoints are the same JSON the desktop/Telegram apps load.  For a
+CPU-only notebook use ``--backend numpy --workers 4`` (or just omit
+``--backend``: ``auto`` picks torch when installed).
 
 Re-running the same command in the next session resumes automatically.
 
@@ -124,9 +130,20 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--total-updates", type=int, default=6000)
     parser.add_argument("--chunk-updates", type=int, default=200)
-    parser.add_argument("--games-per-update", type=int, default=48)
+    parser.add_argument(
+        "--games-per-update", type=int, default=None,
+        help="Games per update (default: 48 numpy, 512 torch)",
+    )
     parser.add_argument("--warm-start-games", type=int, default=6000)
     parser.add_argument("--workers", type=int, default=4)
+    parser.add_argument(
+        "--backend", choices=("auto", "numpy", "torch"), default="auto",
+        help="auto = torch when installed (GPU/CPU vectorised), else numpy",
+    )
+    parser.add_argument(
+        "--device", default="auto",
+        help="Torch device for the torch backend: auto, cpu, cuda, cuda:0, mps",
+    )
     parser.add_argument("--seed", type=int, default=82026)
     parser.add_argument(
         "--time-budget-seconds", type=int, default=30000,
@@ -158,6 +175,28 @@ def main(argv: list[str] | None = None) -> int:
         train_lu_sol,
     )
 
+    backend = args.backend
+    if backend == "auto":
+        try:
+            import torch  # noqa: F401
+
+            backend = "torch"
+        except ImportError:
+            backend = "numpy"
+    if backend == "torch":
+        try:
+            from eightfm.torch_rl import resolve_device, train_lu_sol_torch  # noqa: E402
+        except ImportError as error:
+            raise SystemExit(
+                f"Torch backend is unavailable ({error}). "
+                "Install torch or pass --backend numpy."
+            ) from error
+        device = resolve_device(args.device)
+        games_per_update = args.games_per_update or 512
+    else:
+        device = None
+        games_per_update = args.games_per_update or 48
+
     work = Path(args.work_dir)
     work.mkdir(parents=True, exist_ok=True)
 
@@ -186,7 +225,12 @@ def main(argv: list[str] | None = None) -> int:
     print(f" work dir     : {work}")
     print(f" resume step  : {global_step}/{args.total_updates}")
     print(f" best score   : {best_score:.4f}" if best_score > float("-inf") else " best score   : —")
-    print(f" workers      : {args.workers}")
+    print(f" backend      : {backend}")
+    if backend == "torch":
+        print(f" device       : {device}")
+    else:
+        print(f" workers      : {args.workers}")
+    print(f" games/update : {games_per_update}")
     print(f" time budget  : {args.time_budget_seconds or '∞'} s")
     print("=" * 68)
 
@@ -227,16 +271,15 @@ def main(argv: list[str] | None = None) -> int:
             f"warm_start={warm_start}, resume={'yes' if resume else 'no'})"
         )
 
-        _, metrics = train_lu_sol(
+        chunk_args = dict(
             updates=chunk,
-            games_per_update=args.games_per_update,
+            games_per_update=games_per_update,
             seed=args.seed,
             warm_start_games=warm_start,
             learning_rate=lr_start,
             learning_rate_final=lr_end,
             entropy_coef=ent_start,
             entropy_coef_final=ent_end,
-            workers=args.workers,
             resume=resume,
             output=chunk_best_path,
             latest_path=latest_path,
@@ -245,6 +288,10 @@ def main(argv: list[str] | None = None) -> int:
             plot_path=None,
             verbose=True,
         )
+        if backend == "torch":
+            _, metrics = train_lu_sol_torch(device=device, **chunk_args)
+        else:
+            _, metrics = train_lu_sol(workers=args.workers, **chunk_args)
 
         global_step += chunk
         state["global_step"] = global_step

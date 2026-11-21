@@ -171,7 +171,23 @@ def main() -> int:
         help="Train lu_sol, the maximal policy (rich v2 features, 512/256 net); built for Kaggle",
     )
     lu_sol_parser.add_argument("--updates", type=int, default=3000)
-    lu_sol_parser.add_argument("--games-per-update", type=int, default=48)
+    lu_sol_parser.add_argument(
+        "--games-per-update",
+        type=int,
+        default=None,
+        help="Games per update (default: 48 for numpy, 512 for torch)",
+    )
+    lu_sol_parser.add_argument(
+        "--backend",
+        choices=("numpy", "torch"),
+        default="numpy",
+        help="numpy = reference simulator; torch = vectorised GPU/CPU simulator",
+    )
+    lu_sol_parser.add_argument(
+        "--device",
+        default="auto",
+        help="Torch device for --backend torch: auto, cpu, cuda, cuda:0, mps",
+    )
     lu_sol_parser.add_argument("--players", default="3,4,5,6,7", help="Comma-separated player counts")
     lu_sol_parser.add_argument("--seed", type=int, default=82026)
     lu_sol_parser.add_argument("--warm-start-games", type=int, default=6000)
@@ -193,6 +209,11 @@ def main() -> int:
         "--selection-opponent",
         default="models/classic-rl.json",
         help="Reigning champion the best checkpoint must also beat head-to-head",
+    )
+    lu_sol_parser.add_argument(
+        "--no-selection-opponent",
+        action="store_true",
+        help="Skip the head-to-head selection opponent (useful for smoke tests)",
     )
     lu_sol_parser.add_argument("--head-to-head-games", type=int, default=40)
     lu_sol_parser.add_argument("--checkpoint-every", type=int, default=25)
@@ -452,9 +473,12 @@ def main() -> int:
             warm_start_games = args.warm_start_games
             if args.resume:
                 warm_start_games = 0
-            net, metrics = train_lu_sol(
+            selection_opponent_path = args.selection_opponent
+            if args.no_selection_opponent or not selection_opponent_path or selection_opponent_path.lower() == "none":
+                selection_opponent_path = None
+            checkpoint_dir = args.checkpoint_dir or None
+            common = dict(
                 updates=args.updates,
-                games_per_update=args.games_per_update,
                 player_counts=player_counts,
                 seed=args.seed,
                 warm_start_games=warm_start_games,
@@ -472,10 +496,10 @@ def main() -> int:
                 league_fraction=args.league_fraction,
                 snapshot_every=args.snapshot_every,
                 snapshot_pool_size=args.snapshot_pool_size,
-                selection_opponent_path=args.selection_opponent,
+                selection_opponent_path=selection_opponent_path,
                 head_to_head_games=args.head_to_head_games,
                 checkpoint_every=args.checkpoint_every,
-                checkpoint_dir=args.checkpoint_dir,
+                checkpoint_dir=checkpoint_dir,
                 hidden1=args.hidden1,
                 hidden2=args.hidden2,
                 action_hidden=args.action_hidden,
@@ -484,13 +508,33 @@ def main() -> int:
                 eval_seed_base=args.eval_seed_base,
                 supervised_model=supervised_model,
                 feature_version=args.feature_version,
-                workers=args.workers,
                 output=args.output,
                 latest_path=args.latest,
                 metrics_path=args.metrics,
                 plot_path=args.plot,
                 resume=args.resume,
             )
+            if args.backend == "torch":
+                try:
+                    from .torch_rl import train_lu_sol_torch
+                except ImportError as error:
+                    print(
+                        f"Torch backend is unavailable: {error}. "
+                        "Install torch or use --backend numpy.",
+                        file=sys.stderr,
+                    )
+                    return 2
+                net, metrics = train_lu_sol_torch(
+                    games_per_update=args.games_per_update or 512,
+                    device=args.device,
+                    **common,
+                )
+            else:
+                net, metrics = train_lu_sol(
+                    games_per_update=args.games_per_update or 48,
+                    workers=args.workers,
+                    **common,
+                )
         except (OSError, ValueError, RuntimeError) as error:
             print(f"lu_sol training failed: {error}", file=sys.stderr)
             return 2
@@ -749,7 +793,6 @@ def main() -> int:
             evaluate_controlled_seat,
         )
         from .ensemble import EnsemblePolicy, members_from_tokens, save_ensemble
-        from .policy import load_policy
         from .rl import RLGreedyPolicy, load_rl
 
         try:
