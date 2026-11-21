@@ -112,6 +112,8 @@ def main() -> int:
     rl_train_parser.add_argument("--eval-every", type=int, default=10)
     rl_train_parser.add_argument("--eval-games", type=int, default=20)
     rl_train_parser.add_argument("--eval-seed-base", type=int, default=40000)
+    rl_train_parser.add_argument("--feature-version", type=int, default=2, choices=(1, 2), help="State/action feature layout (2 = richer)")
+    rl_train_parser.add_argument("--workers", type=int, default=1, help="Parallel rollout processes (Kaggle/Linux recommended)")
     rl_train_parser.add_argument("--supervised-model", default="models/classic-policy.json")
     rl_train_parser.add_argument("--output", default="models/classic-rl.json")
     rl_train_parser.add_argument("--latest", default="models/classic-rl-latest.json")
@@ -155,12 +157,59 @@ def main() -> int:
     lu_luna_parser.add_argument("--eval-every", type=int, default=10)
     lu_luna_parser.add_argument("--eval-games", type=int, default=30)
     lu_luna_parser.add_argument("--eval-seed-base", type=int, default=50000)
+    lu_luna_parser.add_argument("--feature-version", type=int, default=2, choices=(1, 2), help="State/action feature layout (2 = richer)")
+    lu_luna_parser.add_argument("--workers", type=int, default=1, help="Parallel rollout processes (Kaggle/Linux recommended)")
     lu_luna_parser.add_argument("--supervised-model", default="models/classic-policy.json")
     lu_luna_parser.add_argument("--output", default="models/lu_luna.json")
     lu_luna_parser.add_argument("--latest", default="models/lu_luna-latest.json")
     lu_luna_parser.add_argument("--metrics", default="models/lu_luna-metrics.json")
     lu_luna_parser.add_argument("--plot", default="plots/lu_luna-training.png")
     lu_luna_parser.add_argument("--resume", help="Continue from a lu_luna checkpoint")
+    absolute_parser = subparsers.add_parser(
+        "train-absolute",
+        help="Train the maximal 'absolute' policy (rich v2 features, 512/256 net); built for Kaggle",
+    )
+    absolute_parser.add_argument("--updates", type=int, default=3000)
+    absolute_parser.add_argument("--games-per-update", type=int, default=48)
+    absolute_parser.add_argument("--players", default="3,4,5,6,7", help="Comma-separated player counts")
+    absolute_parser.add_argument("--seed", type=int, default=82026)
+    absolute_parser.add_argument("--warm-start-games", type=int, default=6000)
+    absolute_parser.add_argument("--bc-epochs", type=int, default=16)
+    absolute_parser.add_argument("--learning-rate", type=float, default=3e-4)
+    absolute_parser.add_argument("--learning-rate-final", type=float, default=2e-5)
+    absolute_parser.add_argument("--batch-size", type=int, default=1024)
+    absolute_parser.add_argument("--ppo-epochs", type=int, default=8)
+    absolute_parser.add_argument("--clip-ratio", type=float, default=0.2)
+    absolute_parser.add_argument("--entropy-coef", type=float, default=0.035)
+    absolute_parser.add_argument("--entropy-coef-final", type=float, default=0.003)
+    absolute_parser.add_argument("--value-clip", type=float, default=0.2)
+    absolute_parser.add_argument("--huber-delta", type=float, default=1.0)
+    absolute_parser.add_argument("--target-kl", type=float, default=0.03)
+    absolute_parser.add_argument("--league-fraction", type=float, default=0.65)
+    absolute_parser.add_argument("--snapshot-every", type=int, default=25)
+    absolute_parser.add_argument("--snapshot-pool-size", type=int, default=12)
+    absolute_parser.add_argument(
+        "--selection-opponent",
+        default="models/classic-rl.json",
+        help="Reigning champion the best checkpoint must also beat head-to-head",
+    )
+    absolute_parser.add_argument("--head-to-head-games", type=int, default=40)
+    absolute_parser.add_argument("--checkpoint-every", type=int, default=25)
+    absolute_parser.add_argument("--checkpoint-dir", default="models/lu_luna_absolute-checkpoints")
+    absolute_parser.add_argument("--hidden1", type=int, default=512)
+    absolute_parser.add_argument("--hidden2", type=int, default=256)
+    absolute_parser.add_argument("--action-hidden", type=int, default=256)
+    absolute_parser.add_argument("--eval-every", type=int, default=25)
+    absolute_parser.add_argument("--eval-games", type=int, default=60)
+    absolute_parser.add_argument("--eval-seed-base", type=int, default=50000)
+    absolute_parser.add_argument("--feature-version", type=int, default=2, choices=(1, 2), help="State/action feature layout (2 = richer)")
+    absolute_parser.add_argument("--workers", type=int, default=1, help="Parallel rollout processes (Kaggle/Linux recommended)")
+    absolute_parser.add_argument("--supervised-model", default="models/classic-policy.json")
+    absolute_parser.add_argument("--output", default="models/lu_luna_absolute.json")
+    absolute_parser.add_argument("--latest", default="models/lu_luna_absolute-latest.json")
+    absolute_parser.add_argument("--metrics", default="models/lu_luna_absolute-metrics.json")
+    absolute_parser.add_argument("--plot", default="plots/absolute-training.png")
+    absolute_parser.add_argument("--resume", help="Continue from an absolute checkpoint (keeps its feature layout)")
     rl_play_parser = subparsers.add_parser(
         "play-rl",
         help="Rank visible cards with the self-play RL policy; never submits a move",
@@ -373,6 +422,8 @@ def main() -> int:
                 eval_games=args.eval_games,
                 eval_seed_base=args.eval_seed_base,
                 supervised_model=supervised_model,
+                feature_version=args.feature_version,
+                workers=args.workers,
                 output=args.output,
                 latest_path=args.latest,
                 metrics_path=args.metrics,
@@ -383,6 +434,69 @@ def main() -> int:
             print(f"RL training failed: {error}", file=sys.stderr)
             return 2
         print(f"Best checkpoint: {args.output} (update {metrics['best_update']}, score {metrics['best_score']:.3f})")
+        print(f"Latest checkpoint: {args.latest}")
+        print(f"Metrics: {args.metrics}")
+        print(f"Plot: {args.plot}")
+        print(f"Elapsed: {metrics.get('seconds', 0):.1f}s")
+        return 0
+
+    if args.command == "train-absolute":
+        from .rl_train import train_absolute
+
+        try:
+            player_counts = _parse_player_counts(args.players)
+            supervised_model = None
+            if args.supervised_model and Path(args.supervised_model).exists():
+                supervised_model = load_policy(args.supervised_model)
+            warm_start_games = args.warm_start_games
+            if args.resume:
+                warm_start_games = 0
+            net, metrics = train_absolute(
+                updates=args.updates,
+                games_per_update=args.games_per_update,
+                player_counts=player_counts,
+                seed=args.seed,
+                warm_start_games=warm_start_games,
+                bc_epochs=args.bc_epochs,
+                learning_rate=args.learning_rate,
+                learning_rate_final=args.learning_rate_final,
+                batch_size=args.batch_size,
+                ppo_epochs=args.ppo_epochs,
+                clip_ratio=args.clip_ratio,
+                entropy_coef=args.entropy_coef,
+                entropy_coef_final=args.entropy_coef_final,
+                value_clip=args.value_clip,
+                huber_delta=args.huber_delta,
+                target_kl=args.target_kl,
+                league_fraction=args.league_fraction,
+                snapshot_every=args.snapshot_every,
+                snapshot_pool_size=args.snapshot_pool_size,
+                selection_opponent_path=args.selection_opponent,
+                head_to_head_games=args.head_to_head_games,
+                checkpoint_every=args.checkpoint_every,
+                checkpoint_dir=args.checkpoint_dir,
+                hidden1=args.hidden1,
+                hidden2=args.hidden2,
+                action_hidden=args.action_hidden,
+                eval_every=args.eval_every,
+                eval_games=args.eval_games,
+                eval_seed_base=args.eval_seed_base,
+                supervised_model=supervised_model,
+                feature_version=args.feature_version,
+                workers=args.workers,
+                output=args.output,
+                latest_path=args.latest,
+                metrics_path=args.metrics,
+                plot_path=args.plot,
+                resume=args.resume,
+            )
+        except (OSError, ValueError, RuntimeError) as error:
+            print(f"Absolute training failed: {error}", file=sys.stderr)
+            return 2
+        print(
+            f"Best checkpoint: {args.output} "
+            f"(update {metrics['best_update']}, score {metrics['best_score']:.3f})"
+        )
         print(f"Latest checkpoint: {args.latest}")
         print(f"Metrics: {args.metrics}")
         print(f"Plot: {args.plot}")
@@ -431,6 +545,8 @@ def main() -> int:
                 eval_games=args.eval_games,
                 eval_seed_base=args.eval_seed_base,
                 supervised_model=supervised_model,
+                feature_version=args.feature_version,
+                workers=args.workers,
                 output=args.output,
                 latest_path=args.latest,
                 metrics_path=args.metrics,

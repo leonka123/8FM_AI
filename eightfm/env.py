@@ -25,6 +25,7 @@ from typing import Iterable, NamedTuple, Sequence
 
 from .model import CARD_IDS
 from .rules import (
+    ALEXEY_TOTALS,
     Action,
     CLOSED_POINTS,
     DECK_COUNTS,
@@ -70,9 +71,35 @@ class StepResult:
 
 # ---------------------------------------------------------------------------
 # Feature layout
+#
+# Two feature layouts are supported.  Version 1 is the original 115-value
+# state / 25-value action encoding; version 2 is a superset that appends
+# combo-progress, closed-card economics, turn context, opponent board
+# pressure, Alexey pressure and success-threshold features.  Old checkpoints
+# keep loading because every encoder takes an explicit version and the
+# network stores the one it was trained with.
+
+LATEST_FEATURE_VERSION = 2
+SUPPORTED_FEATURE_VERSIONS = (1, 2)
+
+# Combo completion thresholds used by :class:`eightfm.baselines.ComboPolicy`.
+# The feature encoder exposes the same progress signal to the network so it
+# can learn to invest in runs instead of chasing only immediate points.
+COMBO_THRESHOLDS: dict[str, int] = {
+    "alaksiej": 7,
+    "olympiad": 6,
+    "akim": 3,
+    "leonidia": 2,
+    "amogus": 2,
+    "evgen": 4,
+    "vanya": 3,
+    "sergay": 4,
+}
+
+_SUCCESS_THRESHOLD = 60.0
 
 
-def state_feature_names() -> list[str]:
+def _state_feature_names_v1() -> list[str]:
     names = [f"players:{count}" for count in SUPPORTED_PLAYER_COUNTS]
     names.extend(f"round:{number}" for number in (1, 2))
     names.extend(f"turn:{number}" for number in (1, 2, 3, 4, 5))
@@ -96,7 +123,22 @@ def state_feature_names() -> list[str]:
     return names
 
 
-def action_feature_names() -> list[str]:
+def _state_feature_names_v2_extra() -> list[str]:
+    names: list[str] = []
+    for card_id in COMBO_THRESHOLDS:
+        names.append(f"combo:{card_id}:progress")
+        names.append(f"combo:{card_id}:potential")
+        names.append(f"combo:{card_id}:reachable")
+    names.extend(("own_closed_points", "table_closed_points"))
+    names.extend(("is_first_turn", "is_last_turn", "is_last_round", "turns_left_in_round"))
+    names.extend(f"opponents_open_rank:{rank}" for rank in range(1, 7))
+    names.extend(("opponents_open_mean", "opponents_open_max"))
+    names.extend(("table_alexey", "own_alexey", "max_opponent_alexey"))
+    names.extend(("points_to_success", "above_success"))
+    return names
+
+
+def _action_feature_names_v1() -> list[str]:
     names = [f"card:{card_id}" for card_id in CARD_IDS]
     names.extend((
         "is_closed", "hand_count", "own_open_count", "table_open_count",
@@ -106,12 +148,35 @@ def action_feature_names() -> list[str]:
     return names
 
 
-def state_feature_size() -> int:
-    return len(state_feature_names())
+def _action_feature_names_v2_extra() -> list[str]:
+    return [
+        "is_combo_card", "combo_progress_ratio", "combo_potential_ratio",
+        "combo_reachable", "alexey_next_step", "is_last_turn", "is_last_round",
+    ]
 
 
-def action_feature_size() -> int:
-    return len(action_feature_names())
+def state_feature_names(version: int = LATEST_FEATURE_VERSION) -> list[str]:
+    if version == 1:
+        return _state_feature_names_v1()
+    if version == 2:
+        return _state_feature_names_v1() + _state_feature_names_v2_extra()
+    raise ValueError(f"Unsupported state feature version: {version}")
+
+
+def action_feature_names(version: int = LATEST_FEATURE_VERSION) -> list[str]:
+    if version == 1:
+        return _action_feature_names_v1()
+    if version == 2:
+        return _action_feature_names_v1() + _action_feature_names_v2_extra()
+    raise ValueError(f"Unsupported action feature version: {version}")
+
+
+def state_feature_size(version: int = LATEST_FEATURE_VERSION) -> int:
+    return len(state_feature_names(version))
+
+
+def action_feature_size(version: int = LATEST_FEATURE_VERSION) -> int:
+    return len(action_feature_names(version))
 
 
 def _norm(value: float, maximum: float) -> float:
@@ -146,7 +211,7 @@ def _unseen_counts(obs: Observation) -> Counter[str]:
     })
 
 
-def state_features(obs: Observation) -> list[float]:
+def _state_features_v1(obs: Observation) -> list[float]:
     n = obs.player_count
     hand = Counter(obs.hand)
     own_open = Counter(
@@ -208,7 +273,7 @@ def state_features(obs: Observation) -> list[float]:
     return result
 
 
-def action_features(obs: Observation, action: Action) -> list[float]:
+def _action_features_v1(obs: Observation, action: Action) -> list[float]:
     n = obs.player_count
     hand = Counter(obs.hand)
     own_open = Counter(
@@ -267,6 +332,124 @@ def action_features(obs: Observation, action: Action) -> list[float]:
         max(-1.0, min(1.0, relative_delta / 20.0)),
     ))
     return result
+
+
+def _state_features_v2_extra(obs: Observation) -> list[float]:
+    n = obs.player_count
+    hand = Counter(obs.hand)
+    own_open = Counter(
+        card_id for card_id, is_closed in obs.own_plays if not is_closed and card_id
+    )
+    own_closed = sum(1 for _, is_closed in obs.own_plays if is_closed)
+    table_open: Counter[str] = Counter()
+    table_closed = 0
+    opponent_open_totals: list[int] = []
+    opponent_alexey: list[int] = []
+    for index, plays in enumerate(obs.all_plays):
+        if index == obs.player:
+            continue
+        opens = Counter(
+            card_id for card_id, is_closed in plays if not is_closed and card_id
+        )
+        table_open.update(opens)
+        opponent_open_totals.append(sum(opens.values()))
+        opponent_alexey.append(opens.get("alaksiej", 0))
+        table_closed += sum(1 for _, is_closed in plays if is_closed)
+    unseen = _unseen_counts(obs)
+    own_score = float(obs.scores[obs.player])
+
+    result: list[float] = []
+    for card_id, threshold in COMBO_THRESHOLDS.items():
+        progress = own_open.get(card_id, 0) + hand.get(card_id, 0)
+        potential = progress + unseen.get(card_id, 0)
+        result.extend((
+            _norm(progress, threshold),
+            _norm(potential, threshold),
+            1.0 if potential >= threshold else 0.0,
+        ))
+    result.extend((
+        _norm(own_closed * CLOSED_POINTS, 20.0),
+        _norm(table_closed * CLOSED_POINTS, 20.0),
+    ))
+    result.extend((
+        1.0 if obs.turn_number == 1 else 0.0,
+        1.0 if obs.turn_number >= 5 else 0.0,
+        1.0 if obs.round_number == 2 else 0.0,
+        _norm(5 - obs.turn_number, 4.0),
+    ))
+    ranked = sorted(opponent_open_totals, reverse=True)[:6]
+    ranked.extend([0] * (6 - len(ranked)))
+    result.extend(_norm(value, 5) for value in ranked)
+    result.extend((
+        _norm(sum(opponent_open_totals) / max(1, len(opponent_open_totals)), 5),
+        _norm(max(opponent_open_totals, default=0), 5),
+    ))
+    result.extend((
+        _norm(table_open.get("alaksiej", 0), 6),
+        _norm(own_open.get("alaksiej", 0), 6),
+        _norm(max(opponent_alexey, default=0), 6),
+    ))
+    result.extend((
+        _norm(max(0.0, _SUCCESS_THRESHOLD - own_score), _SUCCESS_THRESHOLD),
+        1.0 if own_score > _SUCCESS_THRESHOLD else 0.0,
+    ))
+    return result
+
+
+def _action_features_v2_extra(obs: Observation, action: Action) -> list[float]:
+    hand = Counter(obs.hand)
+    own_open = Counter(
+        card_id for card_id, is_closed in obs.own_plays if not is_closed and card_id
+    )
+    unseen = _unseen_counts(obs)
+    card_id = action.card_id
+    threshold = COMBO_THRESHOLDS.get(card_id)
+    if action.is_closed or threshold is None:
+        combo = (0.0, 0.0, 0.0, 0.0, 0.0)
+    else:
+        progress = own_open.get(card_id, 0) + hand.get(card_id, 0)
+        potential = progress + unseen.get(card_id, 0)
+        combo = (
+            1.0,
+            _norm(progress, threshold),
+            _norm(potential, threshold),
+            1.0 if potential >= threshold else 0.0,
+            0.0,
+        )
+    if card_id == "alaksiej" and not action.is_closed:
+        copies = own_open.get(card_id, 0)
+        current = ALEXEY_TOTALS[min(copies, len(ALEXEY_TOTALS) - 1)]
+        following = ALEXEY_TOTALS[min(copies + 1, len(ALEXEY_TOTALS) - 1)]
+        alexey_step = max(0.0, min(1.0, (following - current) / 20.0))
+    else:
+        alexey_step = 0.0
+    return [
+        combo[0], combo[1], combo[2], combo[3], alexey_step,
+        1.0 if obs.turn_number >= 5 else 0.0,
+        1.0 if obs.round_number == 2 else 0.0,
+    ]
+
+
+def state_features(
+    obs: Observation, version: int = LATEST_FEATURE_VERSION
+) -> list[float]:
+    base = _state_features_v1(obs)
+    if version == 1:
+        return base
+    if version == 2:
+        return base + _state_features_v2_extra(obs)
+    raise ValueError(f"Unsupported state feature version: {version}")
+
+
+def action_features(
+    obs: Observation, action: Action, version: int = LATEST_FEATURE_VERSION
+) -> list[float]:
+    base = _action_features_v1(obs, action)
+    if version == 1:
+        return base
+    if version == 2:
+        return base + _action_features_v2_extra(obs, action)
+    raise ValueError(f"Unsupported action feature version: {version}")
 
 
 # ---------------------------------------------------------------------------

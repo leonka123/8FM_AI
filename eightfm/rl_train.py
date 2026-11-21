@@ -23,6 +23,7 @@ from .baselines import (
 )
 from .env import (
     ClassicEnv,
+    LATEST_FEATURE_VERSION,
     Observation,
     Play,
     action_feature_size,
@@ -117,7 +118,9 @@ def collect_episode(
     values_history: list[np.ndarray] = []
     while not env.done:
         turn_index = len(dense_rewards)
-        states, actions, mask, legal_lists = _pad_observations(observations)
+        states, actions, mask, legal_lists = _pad_observations(
+            observations, net.feature_version
+        )
         scores, values, _cache = forward_batch(net, states, actions, mask)
         probabilities = masked_softmax(scores / max(1e-6, temperature), mask)
         selected: list[Action] = []
@@ -172,9 +175,9 @@ def collect_episode(
             next_advantage[player] = advantage
 
     max_actions = max((decision[1].shape[0] for decision in decisions), default=1)
-    states_array = np.zeros((len(decisions), state_feature_size()), dtype=np.float32)
+    states_array = np.zeros((len(decisions), state_feature_size(net.feature_version)), dtype=np.float32)
     actions_array = np.zeros(
-        (len(decisions), max_actions, action_feature_size()), dtype=np.float32
+        (len(decisions), max_actions, action_feature_size(net.feature_version)), dtype=np.float32
     )
     mask_array = np.zeros((len(decisions), max_actions), dtype=bool)
     chosen_array = np.zeros(len(decisions), dtype=np.int64)
@@ -219,9 +222,10 @@ def collect_episode(
 
 
 def combine_episodes(episodes: Sequence[EpisodeData]) -> EpisodeData:
+    action_dim = episodes[0].actions.shape[-1]
     max_actions = max(episode.actions.shape[1] for episode in episodes)
     actions = np.zeros(
-        (sum(episode.actions.shape[0] for episode in episodes), max_actions, action_feature_size()),
+        (sum(episode.actions.shape[0] for episode in episodes), max_actions, action_dim),
         dtype=np.float32,
     )
     mask = np.zeros((actions.shape[0], max_actions), dtype=bool)
@@ -436,6 +440,170 @@ def sample_player_count(rng: random.Random, progress: float) -> int:
 
 
 # ---------------------------------------------------------------------------
+# Parallel rollout
+#
+# The environment is a pure-Python simulator, so the only cheap way to use
+# extra Kaggle cores is to play several games at once in worker processes.
+# A game is described by a picklable spec; the learner network is shipped per
+# task, while the opponent pool is installed in each worker once (and only
+# reinstalled when the league snapshots change).
+
+
+_ROLLOUT_CONTEXT: dict[str, Any] = {}
+
+
+def _rollout_worker_init(
+    opponents: dict[str, Any], gamma: float, gae_lambda: float
+) -> None:
+    import os
+
+    os.environ.setdefault("OMP_NUM_THREADS", "1")
+    os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
+    os.environ.setdefault("MKL_NUM_THREADS", "1")
+    _ROLLOUT_CONTEXT.clear()
+    _ROLLOUT_CONTEXT.update(opponents=opponents, gamma=gamma, gae_lambda=gae_lambda)
+
+
+def _rollout_worker_run(
+    task: tuple[RLNetwork, list[dict[str, Any]]]
+) -> list[EpisodeData]:
+    net, specs = task
+    opponents = _ROLLOUT_CONTEXT["opponents"]
+    gamma = _ROLLOUT_CONTEXT["gamma"]
+    gae_lambda = _ROLLOUT_CONTEXT["gae_lambda"]
+    episodes: list[EpisodeData] = []
+    for spec in specs:
+        rng = np.random.default_rng(spec["rng_seed"])
+        if spec["opponents"] is not None:
+            policies = [
+                None if name is None else opponents[name] for name in spec["opponents"]
+            ]
+            episode = collect_episode(
+                net,
+                spec["player_count"],
+                spec["seed"],
+                rng,
+                gamma=gamma,
+                gae_lambda=gae_lambda,
+                opponent_policies=policies,
+                rl_seats=spec["rl_seats"],
+            )
+        else:
+            episode = collect_episode(
+                net,
+                spec["player_count"],
+                spec["seed"],
+                rng,
+                gamma=gamma,
+                gae_lambda=gae_lambda,
+            )
+        episodes.append(episode)
+    return episodes
+
+
+def _rollout_specs(
+    rng: random.Random,
+    progress: float,
+    games_per_update: int,
+    league_fraction: float,
+    active_pool: Sequence[tuple[str, Policy]],
+    active_weights: Sequence[float],
+) -> tuple[list[dict[str, Any]], int]:
+    """Describe this update's games without running them yet."""
+    specs: list[dict[str, Any]] = []
+    league_games = 0
+    for _ in range(games_per_update):
+        player_count = sample_player_count(rng, progress)
+        seed = rng.randrange(1 << 30)
+        rng_seed = rng.randrange(1 << 30)
+        if league_fraction > 0 and rng.random() < league_fraction:
+            # Put the learner in roughly half of the seats and fill the rest
+            # with a mix of baselines and frozen past checkpoints.
+            rl_count = max(1, player_count // 2)
+            rl_seats = tuple(rng.sample(range(player_count), rl_count))
+            names: list[str | None] = [None] * player_count
+            for seat in range(player_count):
+                if seat in rl_seats:
+                    continue
+                name, _policy = rng.choices(active_pool, weights=active_weights, k=1)[0]
+                names[seat] = name
+            specs.append({
+                "player_count": player_count,
+                "seed": seed,
+                "rng_seed": rng_seed,
+                "rl_seats": rl_seats,
+                "opponents": names,
+            })
+            league_games += 1
+        else:
+            specs.append({
+                "player_count": player_count,
+                "seed": seed,
+                "rng_seed": rng_seed,
+                "rl_seats": None,
+                "opponents": None,
+            })
+    return specs, league_games
+
+
+def _run_serial(
+    net: RLNetwork,
+    specs: Sequence[dict[str, Any]],
+    registry: dict[str, Policy],
+    gamma: float,
+    gae_lambda: float,
+) -> list[EpisodeData]:
+    episodes: list[EpisodeData] = []
+    for spec in specs:
+        rng = np.random.default_rng(spec["rng_seed"])
+        if spec["opponents"] is not None:
+            policies = [
+                None if name is None else registry[name] for name in spec["opponents"]
+            ]
+            episode = collect_episode(
+                net,
+                spec["player_count"],
+                spec["seed"],
+                rng,
+                gamma=gamma,
+                gae_lambda=gae_lambda,
+                opponent_policies=policies,
+                rl_seats=spec["rl_seats"],
+            )
+        else:
+            episode = collect_episode(
+                net,
+                spec["player_count"],
+                spec["seed"],
+                rng,
+                gamma=gamma,
+                gae_lambda=gae_lambda,
+            )
+        episodes.append(episode)
+    return episodes
+
+
+def _chunk_specs(
+    specs: Sequence[dict[str, Any]], workers: int
+) -> list[list[dict[str, Any]]]:
+    chunks: list[list[dict[str, Any]]] = [[] for _ in range(workers)]
+    for index, spec in enumerate(specs):
+        chunks[index % workers].append(spec)
+    return [chunk for chunk in chunks if chunk]
+
+
+def _run_parallel(
+    pool: Any,
+    net: RLNetwork,
+    specs: Sequence[dict[str, Any]],
+    workers: int,
+) -> list[EpisodeData]:
+    chunks = _chunk_specs(specs, workers)
+    results = pool.map(_rollout_worker_run, [(net, chunk) for chunk in chunks])
+    return [episode for batch in results for episode in batch]
+
+
+# ---------------------------------------------------------------------------
 # Evaluation
 
 
@@ -646,6 +814,8 @@ def train_rl(
     hidden1: int = 128,
     hidden2: int = 64,
     action_hidden: int = 64,
+    feature_version: int = LATEST_FEATURE_VERSION,
+    workers: int = 1,
     title: str = "8ФМ Classic RL training (self-play + league)",
     eval_every: int = 10,
     eval_games: int = 20,
@@ -662,11 +832,19 @@ def train_rl(
     np_rng = np.random.default_rng(seed)
     if resume:
         net = load_rl(resume)
+        feature_version = net.feature_version
         if verbose:
-            print(f"Resumed RL model: {resume}")
+            print(
+                f"Resumed RL model: {resume} "
+                f"(features v{net.feature_version}, update {net.metadata.get('best_update', '?')})"
+            )
     else:
         net = create_network(
-            seed, hidden1=hidden1, hidden2=hidden2, action_hidden=action_hidden
+            seed,
+            hidden1=hidden1,
+            hidden2=hidden2,
+            action_hidden=action_hidden,
+            feature_version=feature_version,
         )
     output_path = Path(output)
     if latest_path is None:
@@ -708,6 +886,8 @@ def train_rl(
             "hidden1": hidden1,
             "hidden2": hidden2,
             "action_hidden": action_hidden,
+            "feature_version": feature_version,
+            "workers": workers,
             "eval_games": eval_games,
             "eval_seed_base": eval_seed_base,
             "output": str(output_path),
@@ -726,6 +906,7 @@ def train_rl(
             player_counts=player_counts,
             seed=seed + 17,
             label_policy=ComboPolicy(seed=seed + 104),
+            feature_version=net.feature_version,
         )
         bc_metrics = behaviour_clone(
             net,
@@ -769,6 +950,19 @@ def train_rl(
     best_update = 0
     league_games = 0
     start_time = time.time()
+
+    # Parallel rollouts: the simulator is a pure-Python loop, so the cheap CPU
+    # win is to run several games at once in worker processes.  The learner
+    # net is shipped per task; the (slow-changing) opponent pool is installed
+    # once per worker and reinstalled only when the league snapshots change.
+    workers = max(1, int(workers))
+    pool = None
+    pool_signature: tuple[str, ...] | None = None
+    if workers > 1:
+        try:
+            from concurrent.futures import ProcessPoolExecutor
+        except Exception:  # pragma: no cover - defensive
+            workers = 1
     for update in range(1, updates + 1):
         progress = update / max(1, updates)
         if learning_rate_final is not None:
@@ -784,45 +978,38 @@ def train_rl(
             )
         active_pool = opponent_pool + snapshot_pool
         active_weights = opponent_weights + [snapshot_weight] * len(snapshot_pool)
-        episodes: list[EpisodeData] = []
-        for game_index in range(games_per_update):
-            player_count = sample_player_count(rng, progress)
-            game_seed = rng.randrange(1 << 30)
-            use_league = league_fraction > 0 and rng.random() < league_fraction
-            if use_league:
-                # Put the learner in roughly half of the seats and fill the
-                # rest with a mix of baselines and frozen past checkpoints.
-                rl_count = max(1, player_count // 2)
-                rl_seats = tuple(rng.sample(range(player_count), rl_count))
-                policies: list[Policy | None] = [None] * player_count
-                for seat in range(player_count):
-                    if seat in rl_seats:
-                        continue
-                    _kind, policy = rng.choices(
-                        active_pool, weights=active_weights, k=1
-                    )[0]
-                    policies[seat] = policy
-                episode = collect_episode(
-                    net,
-                    player_count,
-                    game_seed,
-                    np_rng,
-                    gamma=gamma,
-                    gae_lambda=gae_lambda,
-                    opponent_policies=policies,
-                    rl_seats=rl_seats,
+        registry = {name: policy for name, policy in active_pool}
+        specs, new_league_games = _rollout_specs(
+            rng, progress, games_per_update, league_fraction, active_pool, active_weights
+        )
+        league_games += new_league_games
+        episodes: list[EpisodeData]
+        if workers > 1:
+            signature = tuple(sorted(registry))
+            if pool is None or signature != pool_signature:
+                if pool is not None:
+                    pool.shutdown(wait=True)
+                pool = ProcessPoolExecutor(
+                    max_workers=workers,
+                    initializer=_rollout_worker_init,
+                    initargs=(registry, gamma, gae_lambda),
                 )
-                league_games += 1
-            else:
-                episode = collect_episode(
-                    net,
-                    player_count,
-                    game_seed,
-                    np_rng,
-                    gamma=gamma,
-                    gae_lambda=gae_lambda,
-                )
-            episodes.append(episode)
+                pool_signature = signature
+            try:
+                episodes = _run_parallel(pool, net, specs, workers)
+            except Exception as error:  # pragma: no cover - fall back to serial
+                if verbose:
+                    print(f"  parallel rollout failed ({error}); falling back to one worker")
+                try:
+                    pool.shutdown(wait=False, cancel_futures=True)
+                except TypeError:  # pragma: no cover - older Python
+                    pool.shutdown(wait=False)
+                pool = None
+                pool_signature = None
+                workers = 1
+                episodes = _run_serial(net, specs, registry, gamma, gae_lambda)
+        else:
+            episodes = _run_serial(net, specs, registry, gamma, gae_lambda)
         train_metrics = rl_update(
             net,
             episodes,
@@ -930,6 +1117,9 @@ def train_rl(
             save_rl(net, latest_path)
         elif update % max(1, eval_every // 2) == 0:
             save_rl(net, latest_path)
+    if pool is not None:
+        pool.shutdown(wait=True)
+        pool = None
     metrics["best_update"] = best_update
     metrics["best_score"] = best_score
     metrics["seconds"] = round(time.time() - start_time, 2)
@@ -980,10 +1170,12 @@ def _moving_average(values: Sequence[float], window: int) -> list[float]:
 
 def _plot_training(
     metrics: dict[str, Any],
-    path: str | Path,
+    path: str | Path | None,
     *,
     title: str = "8ФМ Classic RL training (self-play + league)",
 ) -> None:
+    if path is None:
+        return
     try:
         import matplotlib
         matplotlib.use("Agg")
@@ -1138,6 +1330,8 @@ def train_lu_luna(
     hidden1: int = 256,
     hidden2: int = 128,
     action_hidden: int = 128,
+    feature_version: int = LATEST_FEATURE_VERSION,
+    workers: int = 1,
     eval_every: int = 10,
     eval_games: int = 30,
     eval_seed_base: int = 50000,
@@ -1199,7 +1393,137 @@ def train_lu_luna(
         hidden1=hidden1,
         hidden2=hidden2,
         action_hidden=action_hidden,
+        feature_version=feature_version,
+        workers=workers,
         title="8ФМ Classic RL training — lu_luna",
+        eval_every=eval_every,
+        eval_games=eval_games,
+        eval_seed_base=eval_seed_base,
+        supervised_model=supervised_model,
+        output=output,
+        latest_path=latest_path,
+        metrics_path=metrics_path,
+        plot_path=plot_path,
+        resume=resume,
+        verbose=verbose,
+    )
+
+
+# ---------------------------------------------------------------------------
+# The "absolute" configuration: the maximal Classic policy
+
+
+ABSOLUTE_OUTPUT = "models/lu_luna_absolute.json"
+ABSOLUTE_LATEST = "models/lu_luna_absolute-latest.json"
+ABSOLUTE_METRICS = "models/lu_luna_absolute-metrics.json"
+ABSOLUTE_PLOT = "plots/absolute-training.png"
+
+# Learning-rate and entropy endpoints for the full absolute schedule.  They
+# are module constants so external drivers (for example the Kaggle harness)
+# can re-derive the value at any global step and keep the anneal monotone
+# across resumed sessions.
+ABSOLUTE_LEARNING_RATE = 3e-4
+ABSOLUTE_LEARNING_RATE_FINAL = 2e-5
+ABSOLUTE_ENTROPY = 0.035
+ABSOLUTE_ENTROPY_FINAL = 0.003
+
+
+def train_absolute(
+    *,
+    updates: int = 3000,
+    games_per_update: int = 48,
+    player_counts: Sequence[int] = (3, 4, 5, 6, 7),
+    seed: int = 8_2026,
+    warm_start_games: int = 6000,
+    bc_epochs: int = 16,
+    learning_rate: float = ABSOLUTE_LEARNING_RATE,
+    learning_rate_final: float | None = ABSOLUTE_LEARNING_RATE_FINAL,
+    batch_size: int = 1024,
+    ppo_epochs: int = 8,
+    clip_ratio: float = 0.2,
+    entropy_coef: float = ABSOLUTE_ENTROPY,
+    entropy_coef_final: float | None = ABSOLUTE_ENTROPY_FINAL,
+    value_coef: float = 0.5,
+    value_clip: float = 0.2,
+    huber_delta: float = 1.0,
+    target_kl: float = 0.03,
+    league_fraction: float = 0.65,
+    snapshot_every: int = 25,
+    snapshot_pool_size: int = 12,
+    snapshot_weight: float = 0.3,
+    selection_opponent_path: str | Path | None = "models/classic-rl.json",
+    head_to_head_games: int = 40,
+    checkpoint_every: int = 25,
+    checkpoint_dir: str | Path | None = "models/lu_luna_absolute-checkpoints",
+    hidden1: int = 512,
+    hidden2: int = 256,
+    action_hidden: int = 256,
+    feature_version: int = LATEST_FEATURE_VERSION,
+    workers: int = 1,
+    eval_every: int = 25,
+    eval_games: int = 60,
+    eval_seed_base: int = 50000,
+    supervised_model: PolicyModel | None = None,
+    output: str | Path = ABSOLUTE_OUTPUT,
+    latest_path: str | Path | None = ABSOLUTE_LATEST,
+    metrics_path: str | Path = ABSOLUTE_METRICS,
+    plot_path: str | Path | None = ABSOLUTE_PLOT,
+    resume: str | Path | None = None,
+    verbose: bool = True,
+) -> tuple[RLNetwork, dict[str, Any]]:
+    """Train the "absolute" Classic policy: the largest recipe in the project.
+
+    Where :func:`train_lu_luna` is the strong-single-machine configuration,
+    ``train_absolute`` is meant to be run on external compute (Kaggle) and
+    turns every knob up:
+
+    * feature layout ``v2`` -- combo progress, closed-card economics, turn and
+      board pressure, Alexey pressure and success-threshold signals on top of
+      the v1 state (158 state / 32 action inputs instead of 115 / 25);
+    * a much wider actor-critic (512/256 state towers, 256-wide action tower);
+    * a long behaviour-cloning warm start and thousands of PPO updates;
+    * a bigger batch, more PPO epochs, a larger self-play league and a broader
+      evaluation than lu_luna.
+
+    All of these are *defaults*: every argument can be overridden, which is how
+    the resumable Kaggle driver runs the same recipe in time-budgeted chunks
+    while keeping one monotone learning-rate / entropy schedule.
+    """
+    selection_opponent: RLNetwork | None = None
+    if selection_opponent_path and Path(selection_opponent_path).exists():
+        selection_opponent = load_rl(selection_opponent_path)
+    return train_rl(
+        updates=updates,
+        games_per_update=games_per_update,
+        player_counts=player_counts,
+        seed=seed,
+        warm_start_games=warm_start_games,
+        bc_epochs=bc_epochs,
+        learning_rate=learning_rate,
+        learning_rate_final=learning_rate_final,
+        batch_size=batch_size,
+        ppo_epochs=ppo_epochs,
+        clip_ratio=clip_ratio,
+        entropy_coef=entropy_coef,
+        entropy_coef_final=entropy_coef_final,
+        value_coef=value_coef,
+        value_clip=value_clip,
+        huber_delta=huber_delta,
+        target_kl=target_kl,
+        league_fraction=league_fraction,
+        snapshot_every=snapshot_every,
+        snapshot_pool_size=snapshot_pool_size,
+        snapshot_weight=snapshot_weight,
+        selection_opponent=selection_opponent,
+        head_to_head_games=head_to_head_games,
+        checkpoint_every=checkpoint_every,
+        checkpoint_dir=checkpoint_dir,
+        hidden1=hidden1,
+        hidden2=hidden2,
+        action_hidden=action_hidden,
+        feature_version=feature_version,
+        workers=workers,
+        title="8ФМ Classic RL training — absolute",
         eval_every=eval_every,
         eval_games=eval_games,
         eval_seed_base=eval_seed_base,
@@ -1307,7 +1631,9 @@ def rank_message_actions(
     player_name: str,
 ) -> dict[str, Any]:
     observation, warnings = observation_from_message(message, player_name)
-    states, actions, mask, legal_lists = _pad_observations([observation])
+    states, actions, mask, legal_lists = _pad_observations(
+        [observation], net.feature_version
+    )
     scores, values, _ = forward_batch(net, states, actions, mask)
     probabilities = masked_softmax(scores, mask)[0]
     own_has_alexey = has_open_alexey(observation.own_plays)

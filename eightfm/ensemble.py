@@ -99,7 +99,7 @@ class _RLMember:
     def raw_scores(self, obs: Observation) -> np.ndarray:
         from .rl import _pad_observations, forward_batch
 
-        states, actions, mask, _ = _pad_observations([obs])
+        states, actions, mask, _ = _pad_observations([obs], self.net.feature_version)
         scores, _, _ = forward_batch(self.net, states, actions, mask)
         return np.asarray(scores[0, : len(obs.legal)], dtype=np.float64)
 

@@ -5,7 +5,12 @@ from pathlib import Path
 import numpy as np
 
 from eightfm.baselines import GreedyPolicy
-from eightfm.env import ClassicEnv, Play
+from eightfm.env import (
+    ClassicEnv,
+    Play,
+    action_feature_size,
+    state_feature_size,
+)
 from eightfm.rl import (
     Adam,
     RLGreedyPolicy,
@@ -28,6 +33,7 @@ from eightfm.rl_train import (
     rank_checkpoints,
     rank_message_actions,
     rl_update,
+    train_absolute,
     train_lu_luna,
 )
 
@@ -36,10 +42,12 @@ class NetworkTests(unittest.TestCase):
     def test_forward_shapes_and_masked_probabilities(self):
         net = create_network(seed=3)
         env = ClassicEnv(5, seed=1)
-        states, actions, mask, legal = _pad_observations(env.observations())
-        self.assertEqual(states.shape, (5, 115))
+        states, actions, mask, legal = _pad_observations(
+            env.observations(), net.feature_version
+        )
+        self.assertEqual(states.shape, (5, state_feature_size(net.feature_version)))
         self.assertEqual(actions.shape[0], 5)
-        self.assertEqual(actions.shape[2], 25)
+        self.assertEqual(actions.shape[2], action_feature_size(net.feature_version))
         self.assertEqual(mask.shape[0], 5)
         scores, values, _ = forward_batch(net, states, actions, mask)
         self.assertEqual(scores.shape, (5, mask.shape[1]))
@@ -60,6 +68,39 @@ class NetworkTests(unittest.TestCase):
         np.testing.assert_allclose(net.W1, loaded.W1)
         np.testing.assert_allclose(net.wv, loaded.wv)
         self.assertEqual(loaded.metadata["note"], "roundtrip")
+
+    def test_feature_version_layouts_roundtrip(self):
+        for version in (1, 2):
+            net = create_network(seed=version, feature_version=version)
+            self.assertEqual(net.feature_version, version)
+            self.assertEqual(
+                net.W1.shape[0], state_feature_size(version)
+            )
+            with tempfile.TemporaryDirectory() as directory:
+                path = Path(directory) / "model.json"
+                save_rl(net, path)
+                loaded = load_rl(path)
+            self.assertEqual(loaded.feature_version, version)
+            self.assertEqual(loaded.W1.shape, net.W1.shape)
+            np.testing.assert_allclose(net.W1, loaded.W1)
+        # The richer layout must expose strictly more inputs than v1.
+        self.assertGreater(state_feature_size(2), state_feature_size(1))
+        self.assertGreater(action_feature_size(2), action_feature_size(1))
+
+    def test_absolute_preset_is_the_maximal_recipe(self):
+        import inspect
+
+        signature = inspect.signature(train_absolute)
+        params = signature.parameters
+        self.assertEqual(params["feature_version"].default, 2)
+        self.assertEqual(params["updates"].default, 3000)
+        self.assertEqual(params["games_per_update"].default, 48)
+        self.assertEqual(params["hidden1"].default, 512)
+        self.assertEqual(params["hidden2"].default, 256)
+        self.assertEqual(params["action_hidden"].default, 256)
+        net = create_network(seed=1, feature_version=2, hidden1=512, hidden2=256, action_hidden=256)
+        self.assertEqual(net.W1.shape, (158, 512))
+        self.assertEqual(net.W2.shape, (512, 256))
 
     def test_greedy_policy_returns_a_legal_action(self):
         net = create_network(seed=2)

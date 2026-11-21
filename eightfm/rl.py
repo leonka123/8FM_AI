@@ -44,6 +44,7 @@ from .baselines import (
 )
 from .env import (
     ClassicEnv,
+    LATEST_FEATURE_VERSION,
     Observation,
     action_feature_size,
     action_features,
@@ -56,7 +57,9 @@ from .rules import DECK_COUNTS, Action, legal_actions
 
 
 RL_FORMAT = "eightfm-rl-actor-critic"
-RL_FEATURES_VERSION = 1
+# Kept for backward compatibility with tooling that imported it; the live
+# value is now per-network (``RLNetwork.feature_version``).
+RL_FEATURES_VERSION = LATEST_FEATURE_VERSION
 
 
 # ---------------------------------------------------------------------------
@@ -76,6 +79,7 @@ class RLNetwork:
     wv: np.ndarray
     bv: np.ndarray
     metadata: dict[str, Any] = field(default_factory=dict)
+    feature_version: int = 1
 
     def __post_init__(self) -> None:
         self.W1 = np.asarray(self.W1, dtype=np.float32)
@@ -96,12 +100,12 @@ class RLNetwork:
     def to_dict(self) -> dict[str, Any]:
         return {
             "format": RL_FORMAT,
-            "features_version": RL_FEATURES_VERSION,
+            "features_version": self.feature_version,
             "card_ids": list(CARD_IDS),
-            "state_feature_size": state_feature_size(),
-            "action_feature_size": action_feature_size(),
-            "state_feature_names": _state_names(),
-            "action_feature_names": _action_names(),
+            "state_feature_size": state_feature_size(self.feature_version),
+            "action_feature_size": action_feature_size(self.feature_version),
+            "state_feature_names": _state_names(self.feature_version),
+            "action_feature_names": _action_names(self.feature_version),
             "W1": self.W1.tolist(),
             "b1": self.b1.tolist(),
             "W2": self.W2.tolist(),
@@ -119,13 +123,14 @@ class RLNetwork:
     def from_dict(cls, data: dict[str, Any]) -> "RLNetwork":
         if data.get("format") != RL_FORMAT:
             raise ValueError("Unsupported RL model format")
-        if int(data.get("features_version", -1)) != RL_FEATURES_VERSION:
-            raise ValueError("Unsupported RL feature version")
+        version = int(data.get("features_version", 1))
+        if version not in (1, 2):
+            raise ValueError(f"Unsupported RL feature version: {version}")
         if list(data.get("card_ids", [])) != list(CARD_IDS):
             raise ValueError("RL model card set does not match this build")
-        if int(data.get("state_feature_size", -1)) != state_feature_size():
+        if int(data.get("state_feature_size", -1)) != state_feature_size(version):
             raise ValueError("RL model state feature size does not match this build")
-        if int(data.get("action_feature_size", -1)) != action_feature_size():
+        if int(data.get("action_feature_size", -1)) != action_feature_size(version):
             raise ValueError("RL model action feature size does not match this build")
         return cls(
             W1=np.asarray(data["W1"], dtype=np.float32),
@@ -139,17 +144,18 @@ class RLNetwork:
             wv=np.asarray(data["wv"], dtype=np.float32),
             bv=np.asarray([data["bv"]], dtype=np.float32),
             metadata=dict(data.get("metadata") or {}),
+            feature_version=version,
         )
 
 
-def _state_names() -> list[str]:
+def _state_names(version: int = LATEST_FEATURE_VERSION) -> list[str]:
     from .env import state_feature_names
-    return state_feature_names()
+    return state_feature_names(version)
 
 
-def _action_names() -> list[str]:
+def _action_names(version: int = LATEST_FEATURE_VERSION) -> list[str]:
     from .env import action_feature_names
-    return action_feature_names()
+    return action_feature_names(version)
 
 
 def create_network(
@@ -158,10 +164,11 @@ def create_network(
     hidden1: int = 128,
     hidden2: int = 64,
     action_hidden: int = 64,
+    feature_version: int = LATEST_FEATURE_VERSION,
 ) -> RLNetwork:
     rng = np.random.default_rng(seed)
-    state_dim = state_feature_size()
-    action_dim = action_feature_size()
+    state_dim = state_feature_size(feature_version)
+    action_dim = action_feature_size(feature_version)
     W1 = rng.normal(0.0, math.sqrt(2.0 / state_dim), (state_dim, hidden1)).astype(np.float32)
     b1 = np.zeros(hidden1, dtype=np.float32)
     W2 = rng.normal(0.0, math.sqrt(2.0 / hidden1), (hidden1, hidden2)).astype(np.float32)
@@ -173,10 +180,12 @@ def create_network(
     return RLNetwork(
         W1=W1, b1=b1, W2=W2, b2=b2, Wa=Wa, ba=ba, Wp=Wp,
         bp=np.zeros(1, dtype=np.float32), wv=wv, bv=np.zeros(1, dtype=np.float32),
+        feature_version=feature_version,
         metadata={
             "hidden1": hidden1,
             "hidden2": hidden2,
             "action_hidden": action_hidden,
+            "feature_version": feature_version,
             "target": "self-play actor-critic",
         },
     )
@@ -209,6 +218,7 @@ def clone_network(net: RLNetwork) -> RLNetwork:
         wv=net.wv.copy(),
         bv=net.bv.copy(),
         metadata=dict(net.metadata),
+        feature_version=net.feature_version,
     )
 
 
@@ -362,18 +372,23 @@ class Adam:
 # Feature batching and action selection
 
 
-def _pad_observations(observations: Sequence[Observation]) -> tuple[np.ndarray, np.ndarray, np.ndarray, list[list[Action]]]:
+def _pad_observations(
+    observations: Sequence[Observation],
+    feature_version: int = LATEST_FEATURE_VERSION,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, list[list[Action]]]:
     batch = len(observations)
     max_actions = max(len(obs.legal) for obs in observations)
-    states = np.zeros((batch, state_feature_size()), dtype=np.float32)
-    actions = np.zeros((batch, max_actions, action_feature_size()), dtype=np.float32)
+    states = np.zeros((batch, state_feature_size(feature_version)), dtype=np.float32)
+    actions = np.zeros((batch, max_actions, action_feature_size(feature_version)), dtype=np.float32)
     mask = np.zeros((batch, max_actions), dtype=bool)
     legal_lists: list[list[Action]] = []
     for row, obs in enumerate(observations):
-        states[row] = np.asarray(state_features(obs), dtype=np.float32)
+        states[row] = np.asarray(state_features(obs, feature_version), dtype=np.float32)
         legal_lists.append(list(obs.legal))
         for column, action in enumerate(obs.legal):
-            actions[row, column] = np.asarray(action_features(obs, action), dtype=np.float32)
+            actions[row, column] = np.asarray(
+                action_features(obs, action, feature_version), dtype=np.float32
+            )
             mask[row, column] = True
     return states, actions, mask, legal_lists
 
@@ -390,7 +405,9 @@ def act_batch(
 
     Returns ``(actions, chosen, log_probs, entropies, values, states, action_tensor, mask)``.
     """
-    states, actions, mask, legal_lists = _pad_observations(observations)
+    states, actions, mask, legal_lists = _pad_observations(
+        observations, net.feature_version
+    )
     scores, values, _ = forward_batch(net, states, actions, mask)
     probabilities = masked_softmax(scores / max(1e-6, temperature), mask)
     if greedy:
@@ -443,6 +460,7 @@ def collect_bc_dataset(
     random_fraction: float = 0.6,
     label_policy: Callable[[Observation], Action] | None = None,
     label_behaviour_fraction: float = 0.6,
+    feature_version: int = LATEST_FEATURE_VERSION,
 ) -> BCDataset:
     """Generate diverse simulator states and label them with a teacher policy.
 
@@ -484,10 +502,12 @@ def collect_bc_dataset(
                     continue
                 label = legal.index(label_action)
                 max_actions = len(legal)
-                state_vector = np.asarray(state_features(obs), dtype=np.float32)
-                action_matrix = np.zeros((max_actions, action_feature_size()), dtype=np.float32)
+                state_vector = np.asarray(state_features(obs, feature_version), dtype=np.float32)
+                action_matrix = np.zeros((max_actions, action_feature_size(feature_version)), dtype=np.float32)
                 for index, candidate in enumerate(legal):
-                    action_matrix[index] = np.asarray(action_features(obs, candidate), dtype=np.float32)
+                    action_matrix[index] = np.asarray(
+                        action_features(obs, candidate, feature_version), dtype=np.float32
+                    )
                 states.append(state_vector)
                 actions.append(action_matrix)
                 masks.append(np.ones(max_actions, dtype=bool))
@@ -496,13 +516,19 @@ def collect_bc_dataset(
             observations = result.observations
 
     max_actions = max((matrix.shape[0] for matrix in actions), default=1)
-    action_tensor = np.zeros((len(actions), max_actions, action_feature_size()), dtype=np.float32)
+    action_tensor = np.zeros(
+        (len(actions), max_actions, action_feature_size(feature_version)), dtype=np.float32
+    )
     mask_tensor = np.zeros((len(actions), max_actions), dtype=bool)
     for row, (matrix, mask) in enumerate(zip(actions, masks)):
         action_tensor[row, :matrix.shape[0]] = matrix
         mask_tensor[row, :mask.shape[0]] = mask
     return BCDataset(
-        states=np.stack(states) if states else np.zeros((0, state_feature_size()), dtype=np.float32),
+        states=(
+            np.stack(states)
+            if states
+            else np.zeros((0, state_feature_size(feature_version)), dtype=np.float32)
+        ),
         actions=action_tensor,
         mask=mask_tensor,
         labels=np.asarray(labels, dtype=np.int64),

@@ -9,3 +9,7 @@ build/
 *.spec
 telegram-config.json
 dist/
+
+# "Absolute" model training artifacts (normally produced on Kaggle, not committed)
+models/lu_luna_absolute-checkpoints/
+kaggle-run/
