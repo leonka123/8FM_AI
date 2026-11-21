@@ -36,6 +36,12 @@ class DriverHelpersTests(unittest.TestCase):
             self.assertEqual(loaded["chunks"], 3)
             self.assertAlmostEqual(loaded["best_score"], 0.5)
 
+    def test_parser_exposes_backend_and_device(self):
+        args = driver.build_parser().parse_args([])
+        self.assertEqual(args.backend, "auto")
+        self.assertEqual(args.device, "auto")
+        self.assertIsNone(args.games_per_update)
+
     def test_merge_metrics_appends_chunks(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "metrics.json"

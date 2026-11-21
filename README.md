@@ -98,6 +98,7 @@
 - Python 3.10 или новее
 - Для аудита, разбора сообщений и `play` без обучения дополнительные пакеты не нужны
 - Для обучения score-модели, supervised-политики и RL: `python -m pip install -r requirements-training.txt` (NumPy и matplotlib)
+- Для векторного GPU/CPU-обучения `lu_sol`: дополнительно `python -m pip install torch` (на Kaggle PyTorch уже установлен; без него работает эталонный `--backend numpy`)
 - Для необязательного `telegram-assistant`: `python -m pip install -r requirements-telegram.txt` (Telethon)
 - Для десктоп-приложения с окном и треем: `python -m pip install -r requirements-desktop.txt` (Telethon, pystray, Pillow, NumPy)
 - Без matplotlib метрики всё равно сохраняются, но PNG/SVG-графики не создаются

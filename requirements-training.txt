@@ -1,2 +1,6 @@
 numpy>=1.24
 matplotlib>=3.7
+# Optional: vectorised GPU/CPU backend for `train-lu-sol --backend torch`.
+# PyTorch is a large download and is NOT needed by the desktop app, so install
+# it explicitly when you want the fast trainer:
+#   python -m pip install torch
