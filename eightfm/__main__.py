@@ -199,7 +199,7 @@ def main() -> int:
     absolute_parser.add_argument("--hidden1", type=int, default=512)
     absolute_parser.add_argument("--hidden2", type=int, default=256)
     absolute_parser.add_argument("--action-hidden", type=int, default=256)
-    absolute_parser.add_argument("--eval-every", type=int, default=25)
+    absolute_parser.add_argument("--eval-every", type=int, default=50)
     absolute_parser.add_argument("--eval-games", type=int, default=60)
     absolute_parser.add_argument("--eval-seed-base", type=int, default=50000)
     absolute_parser.add_argument("--feature-version", type=int, default=2, choices=(1, 2), help="State/action feature layout (2 = richer)")

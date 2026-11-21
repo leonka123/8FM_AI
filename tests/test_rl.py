@@ -315,6 +315,87 @@ class LuLunaTests(unittest.TestCase):
         self.assertIn("greedy_win_rate", ranked[0]["summary"])
 
 
+class AbsoluteTests(unittest.TestCase):
+    def test_train_absolute_uses_v2_features_with_a_tiny_config(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            net, metrics = train_absolute(
+                updates=1,
+                games_per_update=1,
+                player_counts=(3,),
+                warm_start_games=0,
+                hidden1=16,
+                hidden2=8,
+                action_hidden=8,
+                eval_every=0,
+                eval_games=1,
+                selection_opponent_path=None,
+                head_to_head_games=1,
+                checkpoint_every=0,
+                checkpoint_dir=None,
+                verbose=False,
+                output=root / "absolute.json",
+                latest_path=root / "latest.json",
+                metrics_path=root / "metrics.json",
+                plot_path=None,
+            )
+            self.assertEqual(net.feature_version, 2)
+            self.assertEqual(net.W1.shape[0], state_feature_size(2))
+            self.assertEqual(net.Wa.shape[0], action_feature_size(2))
+            self.assertEqual(metrics["config"]["feature_version"], 2)
+            # eval_every=0 must disable periodic evaluation instead of dividing by zero
+            self.assertEqual(metrics["config"]["eval_every"], 0)
+            self.assertEqual(len(metrics["updates"]), 1)
+
+    def test_resume_keeps_feature_version(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            first, _ = train_absolute(
+                updates=1,
+                games_per_update=1,
+                player_counts=(3,),
+                warm_start_games=0,
+                hidden1=16,
+                hidden2=8,
+                action_hidden=8,
+                eval_every=0,
+                eval_games=1,
+                selection_opponent_path=None,
+                head_to_head_games=1,
+                checkpoint_every=0,
+                checkpoint_dir=None,
+                verbose=False,
+                output=root / "absolute.json",
+                latest_path=root / "latest.json",
+                metrics_path=root / "metrics.json",
+                plot_path=None,
+            )
+            resumed, metrics = train_absolute(
+                updates=1,
+                games_per_update=1,
+                player_counts=(3,),
+                warm_start_games=0,
+                hidden1=999,  # ignored: the resumed net keeps its own size
+                hidden2=8,
+                action_hidden=8,
+                eval_every=0,
+                eval_games=1,
+                selection_opponent_path=None,
+                head_to_head_games=1,
+                checkpoint_every=0,
+                checkpoint_dir=None,
+                verbose=False,
+                resume=root / "latest.json",
+                output=root / "absolute.json",
+                latest_path=root / "latest.json",
+                metrics_path=root / "metrics.json",
+                plot_path=None,
+            )
+            self.assertEqual(resumed.feature_version, first.feature_version)
+            self.assertEqual(resumed.W1.shape, first.W1.shape)
+            self.assertEqual(metrics["config"]["feature_version"], 2)
+
+
 class MessageTests(unittest.TestCase):
     def test_observation_from_real_message(self):
         message = Path(__file__).with_name("message-4734.txt").read_text(encoding="utf-8")

@@ -888,6 +888,7 @@ def train_rl(
             "action_hidden": action_hidden,
             "feature_version": feature_version,
             "workers": workers,
+            "eval_every": eval_every,
             "eval_games": eval_games,
             "eval_seed_base": eval_seed_base,
             "output": str(output_path),
@@ -1071,7 +1072,7 @@ def train_rl(
             archive_dir = Path(checkpoint_dir)
             archive_dir.mkdir(parents=True, exist_ok=True)
             save_rl(net, archive_dir / f"update-{update:04d}.json")
-        if update % eval_every == 0 or update == updates:
+        if (eval_every > 0 and update % eval_every == 0) or update == updates:
             eval_report = evaluate_rl(
                 net,
                 player_counts=player_counts,
@@ -1460,7 +1461,7 @@ def train_absolute(
     action_hidden: int = 256,
     feature_version: int = LATEST_FEATURE_VERSION,
     workers: int = 1,
-    eval_every: int = 25,
+    eval_every: int = 50,
     eval_games: int = 60,
     eval_seed_base: int = 50000,
     supervised_model: PolicyModel | None = None,
