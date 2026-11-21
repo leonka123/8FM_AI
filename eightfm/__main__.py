@@ -232,6 +232,40 @@ def main() -> int:
     lu_sol_parser.add_argument("--metrics", default="models/lu_sol-metrics.json")
     lu_sol_parser.add_argument("--plot", default="plots/lu_sol-training.png")
     lu_sol_parser.add_argument("--resume", help="Continue from a lu_sol checkpoint (keeps its feature layout)")
+
+    lu_astra_parser = subparsers.add_parser(
+        "train-lu-astra",
+        help="Train lu_astra, the ultimate policy (v3 features, cross-attention, 12h Kaggle GPU)",
+    )
+    lu_astra_parser.add_argument("--updates", type=int, default=8000)
+    lu_astra_parser.add_argument("--games-per-update", type=int, default=1024)
+    lu_astra_parser.add_argument("--batch-size", type=int, default=2048)
+    lu_astra_parser.add_argument("--ppo-epochs", type=int, default=12)
+    lu_astra_parser.add_argument("--learning-rate", type=float, default=5e-4)
+    lu_astra_parser.add_argument("--learning-rate-final", type=float, default=1e-5)
+    lu_astra_parser.add_argument("--warmup-steps", type=int, default=500)
+    lu_astra_parser.add_argument("--entropy-coef", type=float, default=0.05)
+    lu_astra_parser.add_argument("--entropy-coef-final", type=float, default=0.001)
+    lu_astra_parser.add_argument("--clip-eps", type=float, default=0.2)
+    lu_astra_parser.add_argument("--clip-eps-final", type=float, default=0.1)
+    lu_astra_parser.add_argument("--gae-lambda", type=float, default=0.97)
+    lu_astra_parser.add_argument("--gamma", type=float, default=0.995)
+    lu_astra_parser.add_argument("--target-kl", type=float, default=0.02)
+    lu_astra_parser.add_argument("--max-grad-norm", type=float, default=0.5)
+    lu_astra_parser.add_argument("--value-clip", type=float, default=0.5)
+    lu_astra_parser.add_argument("--huber-delta", type=float, default=1.0)
+    lu_astra_parser.add_argument("--eval-every", type=int, default=40)
+    lu_astra_parser.add_argument("--eval-games", type=int, default=100)
+    lu_astra_parser.add_argument("--snapshot-every", type=int, default=20)
+    lu_astra_parser.add_argument("--snapshot-pool-size", type=int, default=20)
+    lu_astra_parser.add_argument("--players", default="3,4,5,6,7")
+    lu_astra_parser.add_argument("--seed", type=int, default=42)
+    lu_astra_parser.add_argument("--device", default="auto", help="auto, cpu, cuda, cuda:0")
+    lu_astra_parser.add_argument("--output", default="models/lu_astra.json")
+    lu_astra_parser.add_argument("--resume", help="Continue from a lu_astra checkpoint (.pt file)")
+    lu_astra_parser.add_argument("--wandb", action="store_true", help="Log to Weights & Biases")
+    lu_astra_parser.add_argument("--wandb-project", type=str, default="8fm-astra")
+
     rl_play_parser = subparsers.add_parser(
         "play-rl",
         help="Rank visible cards with the self-play RL policy; never submits a move",
@@ -314,6 +348,31 @@ def main() -> int:
     ensemble_parser.add_argument("--save", help="Save the ensemble config to this JSON path")
     ensemble_parser.add_argument("--no-eval", action="store_true", help="Only print and save the config")
     ensemble_parser.add_argument("--json", action="store_true")
+    tournament_parser = subparsers.add_parser(
+        "tournament",
+        help="Round-robin between lu_luna, lu_sol, supervised, greedy and classic-rl",
+    )
+    tournament_parser.add_argument(
+        "--participants",
+        default="luna,sol,supervised,greedy,rl_classic",
+        help="Comma-separated participant names",
+    )
+    tournament_parser.add_argument(
+        "--games",
+        type=int,
+        default=100,
+        help="Games per player count (total = games x player counts)",
+    )
+    tournament_parser.add_argument("--players", default="3,4,5,6,7")
+    tournament_parser.add_argument("--seed-base", type=int, default=120000)
+    tournament_parser.add_argument("--seed", type=int, default=0)
+    tournament_parser.add_argument("--luna", default="models/lu_luna.json")
+    tournament_parser.add_argument("--sol", default="models/lu_sol.json")
+    tournament_parser.add_argument("--supervised-model", default="models/classic-policy.json")
+    tournament_parser.add_argument("--rl-classic", default="models/classic-rl.json")
+    tournament_parser.add_argument("--astra", default="models/lu_astra.json")
+    tournament_parser.add_argument("--output", help="Save the full JSON report here")
+    tournament_parser.add_argument("--json", action="store_true")
     app_parser = subparsers.add_parser(
         "app",
         help="Desktop window + system tray assistant (8ФМ Ассистент)",
@@ -546,6 +605,50 @@ def main() -> int:
         print(f"Metrics: {args.metrics}")
         print(f"Plot: {args.plot}")
         print(f"Elapsed: {metrics.get('seconds', 0):.1f}s")
+        return 0
+
+    if args.command == "train-lu-astra":
+        from .torch_astra import train_lu_astra
+
+        try:
+            player_counts = _parse_player_counts(args.players)
+            device = args.device
+            if device == "auto":
+                device = "cuda" if torch.cuda.is_available() else "cpu"
+            net, metrics = train_lu_astra(
+                total_updates=args.updates,
+                games_per_update=args.games_per_update,
+                batch_size=args.batch_size,
+                ppo_epochs=args.ppo_epochs,
+                learning_rate=args.learning_rate,
+                learning_rate_final=args.learning_rate_final,
+                warmup_steps=args.warmup_steps,
+                entropy_coef=args.entropy_coef,
+                entropy_coef_final=args.entropy_coef_final,
+                clip_eps=args.clip_eps,
+                clip_eps_final=args.clip_eps_final,
+                gae_lambda=args.gae_lambda,
+                gamma=args.gamma,
+                target_kl=args.target_kl,
+                max_grad_norm=args.max_grad_norm,
+                value_clip=args.value_clip,
+                huber_delta=args.huber_delta,
+                eval_every=args.eval_every,
+                eval_games=args.eval_games,
+                snapshot_every=args.snapshot_every,
+                snapshot_pool_size=args.snapshot_pool_size,
+                player_counts=player_counts,
+                seed=args.seed,
+                device=device,
+                output_path=args.output,
+            )
+        except (OSError, ValueError, RuntimeError, ImportError) as error:
+            print(f"lu_astra training failed: {error}", file=sys.stderr)
+            import traceback
+            traceback.print_exc()
+            return 2
+        print(f"Training complete!")
+        print(f"Model saved to: {args.output}")
         return 0
 
     if args.command == "train-lu-luna":
@@ -899,6 +1002,46 @@ def main() -> int:
                 f"rank {summary[name]['mean_rank']:.2f}, "
                 f">60 {summary[name]['success_rate']:.1%}"
             )
+        return 0
+
+    if args.command == "tournament":
+        from .tournament import format_tournament_report, run_tournament, save_report
+
+        models = {
+            "luna": args.luna,
+            "sol": args.sol,
+            "astra": args.astra,
+            "supervised": args.supervised_model,
+            "rl_classic": args.rl_classic,
+        }
+        try:
+            player_counts = _parse_player_counts(args.players)
+        except ValueError as error:
+            print(f"Invalid player counts: {error}", file=sys.stderr)
+            return 2
+        names = tuple(part.strip() for part in args.participants.split(",") if part.strip())
+        if len(names) < 5:
+            print("Need at least 5 participants for the tournament", file=sys.stderr)
+            return 2
+        try:
+            report = run_tournament(
+                names=names,
+                models=models,
+                player_counts=player_counts,
+                games_per_player_count=args.games,
+                seed_base=args.seed_base,
+                seed=args.seed,
+            )
+        except (OSError, ValueError, FileNotFoundError) as error:
+            print(f"Tournament failed: {error}", file=sys.stderr)
+            return 2
+        if args.output:
+            save_report(report, args.output)
+            print(f"Report saved: {args.output}")
+        if args.json:
+            print(json.dumps(report, ensure_ascii=False, indent=2))
+            return 0
+        print(format_tournament_report(report))
         return 0
 
     if args.command == "app":

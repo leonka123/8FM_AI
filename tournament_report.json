@@ -1,0 +1,355 @@
+{
+  "format": "eightfm-tournament",
+  "games": 500,
+  "games_per_player_count": 100,
+  "player_counts": [
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
+  "seed_base": 120000,
+  "participants": {
+    "luna": {
+      "games": 500,
+      "win_rate": 0.23,
+      "top2_rate": 0.498,
+      "mean_rank": 2.738,
+      "mean_score": 55.21,
+      "success_rate": 0.182,
+      "mean_margin": 2.7011
+    },
+    "sol": {
+      "games": 500,
+      "win_rate": 0.382,
+      "top2_rate": 0.672,
+      "mean_rank": 2.224,
+      "mean_score": 57.706,
+      "success_rate": 0.288,
+      "mean_margin": 5.8827
+    },
+    "supervised": {
+      "games": 500,
+      "win_rate": 0.05,
+      "top2_rate": 0.112,
+      "mean_rank": 4.758,
+      "mean_score": 43.1,
+      "success_rate": 0.056,
+      "mean_margin": -12.119066666666667
+    },
+    "greedy": {
+      "games": 500,
+      "win_rate": 0.226,
+      "top2_rate": 0.438,
+      "mean_rank": 2.922,
+      "mean_score": 54.782,
+      "success_rate": 0.172,
+      "mean_margin": 2.1115666666666666
+    },
+    "rl_classic": {
+      "games": 500,
+      "win_rate": 0.198,
+      "top2_rate": 0.398,
+      "mean_rank": 2.98,
+      "mean_score": 54.104,
+      "success_rate": 0.162,
+      "mean_margin": 1.4237
+    }
+  },
+  "by_player_count": {
+    "3": {
+      "luna": {
+        "games": 60,
+        "win_rate": 0.31666666666666665,
+        "top2_rate": 0.75,
+        "mean_rank": 1.9333333333333333,
+        "mean_score": 51.2,
+        "success_rate": 0.05,
+        "mean_margin": -0.25833333333333336
+      },
+      "sol": {
+        "games": 60,
+        "win_rate": 0.6666666666666666,
+        "top2_rate": 0.8833333333333333,
+        "mean_rank": 1.45,
+        "mean_score": 55.7,
+        "success_rate": 0.15,
+        "mean_margin": 5.691666666666666
+      },
+      "supervised": {
+        "games": 60,
+        "win_rate": 0.21666666666666667,
+        "top2_rate": 0.4166666666666667,
+        "mean_rank": 2.3666666666666667,
+        "mean_score": 48.68333333333333,
+        "success_rate": 0.16666666666666666,
+        "mean_margin": -5.6
+      },
+      "greedy": {
+        "games": 60,
+        "win_rate": 0.38333333333333336,
+        "top2_rate": 0.8,
+        "mean_rank": 1.8166666666666667,
+        "mean_score": 53.7,
+        "success_rate": 0.08333333333333333,
+        "mean_margin": 1.7916666666666667
+      },
+      "rl_classic": {
+        "games": 60,
+        "win_rate": 0.23333333333333334,
+        "top2_rate": 0.55,
+        "mean_rank": 2.216666666666667,
+        "mean_score": 50.6,
+        "success_rate": 0.1,
+        "mean_margin": -1.625
+      }
+    },
+    "4": {
+      "luna": {
+        "games": 80,
+        "win_rate": 0.3125,
+        "top2_rate": 0.6625,
+        "mean_rank": 2.1125,
+        "mean_score": 55.625,
+        "success_rate": 0.2,
+        "mean_margin": 2.870833333333333
+      },
+      "sol": {
+        "games": 80,
+        "win_rate": 0.525,
+        "top2_rate": 0.85,
+        "mean_rank": 1.6875,
+        "mean_score": 57.9,
+        "success_rate": 0.25,
+        "mean_margin": 5.545833333333333
+      },
+      "supervised": {
+        "games": 80,
+        "win_rate": 0.075,
+        "top2_rate": 0.175,
+        "mean_rank": 3.4375,
+        "mean_score": 46.35,
+        "success_rate": 0.1125,
+        "mean_margin": -9.4
+      },
+      "greedy": {
+        "games": 80,
+        "win_rate": 0.1625,
+        "top2_rate": 0.425,
+        "mean_rank": 2.7125,
+        "mean_score": 53.25,
+        "success_rate": 0.1,
+        "mean_margin": -0.6666666666666664
+      },
+      "rl_classic": {
+        "games": 80,
+        "win_rate": 0.25,
+        "top2_rate": 0.5,
+        "mean_rank": 2.3375,
+        "mean_score": 54.575,
+        "success_rate": 0.1875,
+        "mean_margin": 1.6500000000000001
+      }
+    },
+    "5": {
+      "luna": {
+        "games": 100,
+        "win_rate": 0.24,
+        "top2_rate": 0.45,
+        "mean_rank": 2.6,
+        "mean_score": 55.44,
+        "success_rate": 0.16,
+        "mean_margin": 2.9675
+      },
+      "sol": {
+        "games": 100,
+        "win_rate": 0.38,
+        "top2_rate": 0.74,
+        "mean_rank": 2.02,
+        "mean_score": 58.28,
+        "success_rate": 0.34,
+        "mean_margin": 6.5175
+      },
+      "supervised": {
+        "games": 100,
+        "win_rate": 0.01,
+        "top2_rate": 0.06,
+        "mean_rank": 4.61,
+        "mean_score": 41.47,
+        "success_rate": 0.02,
+        "mean_margin": -14.495
+      },
+      "greedy": {
+        "games": 100,
+        "win_rate": 0.23,
+        "top2_rate": 0.47,
+        "mean_rank": 2.65,
+        "mean_score": 55.34,
+        "success_rate": 0.19,
+        "mean_margin": 2.8425
+      },
+      "rl_classic": {
+        "games": 100,
+        "win_rate": 0.25,
+        "top2_rate": 0.43,
+        "mean_rank": 2.74,
+        "mean_score": 54.8,
+        "success_rate": 0.21,
+        "mean_margin": 2.1675
+      }
+    },
+    "6": {
+      "luna": {
+        "games": 120,
+        "win_rate": 0.18333333333333332,
+        "top2_rate": 0.4583333333333333,
+        "mean_rank": 2.9583333333333335,
+        "mean_score": 56.50833333333333,
+        "success_rate": 0.2,
+        "mean_margin": 3.5316666666666667
+      },
+      "sol": {
+        "games": 120,
+        "win_rate": 0.2833333333333333,
+        "top2_rate": 0.5916666666666667,
+        "mean_rank": 2.433333333333333,
+        "mean_score": 58.18333333333333,
+        "success_rate": 0.30833333333333335,
+        "mean_margin": 5.688333333333333
+      },
+      "supervised": {
+        "games": 120,
+        "win_rate": 0.016666666666666666,
+        "top2_rate": 0.058333333333333334,
+        "mean_rank": 5.35,
+        "mean_score": 41.125,
+        "success_rate": 0.041666666666666664,
+        "mean_margin": -14.443333333333333
+      },
+      "greedy": {
+        "games": 120,
+        "win_rate": 0.2,
+        "top2_rate": 0.36666666666666664,
+        "mean_rank": 3.1083333333333334,
+        "mean_score": 55.708333333333336,
+        "success_rate": 0.225,
+        "mean_margin": 2.9016666666666664
+      },
+      "rl_classic": {
+        "games": 120,
+        "win_rate": 0.20833333333333334,
+        "top2_rate": 0.35833333333333334,
+        "mean_rank": 3.15,
+        "mean_score": 55.141666666666666,
+        "success_rate": 0.18333333333333332,
+        "mean_margin": 2.3216666666666663
+      }
+    },
+    "7": {
+      "luna": {
+        "games": 140,
+        "win_rate": 0.17857142857142858,
+        "top2_rate": 0.36428571428571427,
+        "mean_rank": 3.35,
+        "mean_score": 55.41428571428571,
+        "success_rate": 0.22857142857142856,
+        "mean_margin": 2.9702380952380953
+      },
+      "sol": {
+        "games": 140,
+        "win_rate": 0.2642857142857143,
+        "top2_rate": 0.5,
+        "mean_rank": 2.8285714285714287,
+        "mean_score": 57.635714285714286,
+        "success_rate": 0.3142857142857143,
+        "mean_margin": 5.870238095238095
+      },
+      "supervised": {
+        "games": 140,
+        "win_rate": 0.02142857142857143,
+        "top2_rate": 0.02857142857142857,
+        "mean_rank": 6.135714285714286,
+        "mean_score": 41.707142857142856,
+        "success_rate": 0.014285714285714285,
+        "mean_margin": -12.777380952380952
+      },
+      "greedy": {
+        "games": 140,
+        "win_rate": 0.21428571428571427,
+        "top2_rate": 0.32857142857142857,
+        "mean_rank": 3.55,
+        "mean_score": 54.92857142857143,
+        "success_rate": 0.19285714285714287,
+        "mean_margin": 2.6369047619047614
+      },
+      "rl_classic": {
+        "games": 140,
+        "win_rate": 0.10714285714285714,
+        "top2_rate": 0.2857142857142857,
+        "mean_rank": 3.7,
+        "mean_score": 53.95,
+        "success_rate": 0.12142857142857143,
+        "mean_margin": 1.3
+      }
+    }
+  },
+  "leaderboard": [
+    {
+      "name": "sol",
+      "games": 500,
+      "win_rate": 0.382,
+      "top2_rate": 0.672,
+      "mean_rank": 2.224,
+      "mean_score": 57.706,
+      "success_rate": 0.288,
+      "mean_margin": 5.8827,
+      "place": 1
+    },
+    {
+      "name": "luna",
+      "games": 500,
+      "win_rate": 0.23,
+      "top2_rate": 0.498,
+      "mean_rank": 2.738,
+      "mean_score": 55.21,
+      "success_rate": 0.182,
+      "mean_margin": 2.7011,
+      "place": 2
+    },
+    {
+      "name": "greedy",
+      "games": 500,
+      "win_rate": 0.226,
+      "top2_rate": 0.438,
+      "mean_rank": 2.922,
+      "mean_score": 54.782,
+      "success_rate": 0.172,
+      "mean_margin": 2.1115666666666666,
+      "place": 3
+    },
+    {
+      "name": "rl_classic",
+      "games": 500,
+      "win_rate": 0.198,
+      "top2_rate": 0.398,
+      "mean_rank": 2.98,
+      "mean_score": 54.104,
+      "success_rate": 0.162,
+      "mean_margin": 1.4237,
+      "place": 4
+    },
+    {
+      "name": "supervised",
+      "games": 500,
+      "win_rate": 0.05,
+      "top2_rate": 0.112,
+      "mean_rank": 4.758,
+      "mean_score": 43.1,
+      "success_rate": 0.056,
+      "mean_margin": -12.119066666666667,
+      "place": 5
+    }
+  ],
+  "chance_win_rate": 0.21857142857142856
+}
