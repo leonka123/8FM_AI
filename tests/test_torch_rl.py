@@ -18,6 +18,7 @@ try:
         collect_torch_rollout,
         to_rl_network,
         torch_rl_update,
+        train_lu_astra,
         train_lu_sol_torch,
     )
 except ImportError:  # pragma: no cover - torch is optional
@@ -158,4 +159,47 @@ class TorchTrainingSmokeTests(unittest.TestCase):
             self.assertEqual(loaded.Wa.shape, (action_feature_size(2), 256))
             self.assertEqual(metrics["backend"], "torch")
             self.assertEqual(metrics["best_update"], 1)
+            self.assertEqual(len(metrics["updates"]), 1)
+
+    def test_astra_preset_defaults_are_upsized(self):
+        import inspect
+
+        signature = inspect.signature(train_lu_astra)
+        self.assertEqual(signature.parameters["hidden1"].default, 1024)
+        self.assertEqual(signature.parameters["hidden2"].default, 512)
+        self.assertEqual(signature.parameters["action_hidden"].default, 512)
+        self.assertEqual(signature.parameters["ppo_epochs"].default, 12)
+
+    def test_tiny_astra_training_writes_loadable_model(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            model, metrics = train_lu_astra(
+                updates=1,
+                games_per_update=8,
+                player_counts=(3,),
+                seed=1,
+                warm_start_games=4,
+                bc_epochs=1,
+                hidden1=64,
+                hidden2=32,
+                action_hidden=32,
+                eval_every=0,
+                eval_games=1,
+                head_to_head_games=1,
+                selection_opponent_path=None,
+                checkpoint_every=0,
+                checkpoint_dir=None,
+                output=root / "lu_astra.json",
+                latest_path=root / "lu_astra-latest.json",
+                metrics_path=root / "lu_astra-metrics.json",
+                plot_path=None,
+                verbose=False,
+            )
+            self.assertTrue((root / "lu_astra.json").exists())
+            self.assertTrue((root / "lu_astra-latest.json").exists())
+            loaded = load_rl(root / "lu_astra.json")
+            self.assertEqual(loaded.feature_version, 2)
+            self.assertEqual(loaded.W1.shape, (state_feature_size(2), 64))
+            self.assertEqual(loaded.Wa.shape, (action_feature_size(2), 32))
+            self.assertEqual(metrics["backend"], "torch")
             self.assertEqual(len(metrics["updates"]), 1)

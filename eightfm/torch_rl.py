@@ -1192,3 +1192,131 @@ def train_lu_sol_torch(
         resume=resume,
         verbose=verbose,
     )
+
+
+# ---------------------------------------------------------------------------
+# lu_astra — the maximal preset
+#
+# ``lu_astra`` is not a new architecture: it is the proven :class:`TorchActorCritic`
+# (and therefore the exact ``RLNetwork`` JSON the apps load) pushed as far as the
+# 12-hour Kaggle GPU budget allows.  The uplift over ``lu_sol`` is:
+#
+# * a much wider net (1024/512/512 vs 512/256/256) for more expressive play;
+# * more PPO passes per batch and a longer, smoother anneal;
+# * a deeper, more aggressive league and a stronger head-to-head selector
+#   (it is selected *against lu_sol*, so the best checkpoint is the one that
+#   actually beats the reigning champion, not just the bots);
+# * longer behaviour-cloning warm start and larger evaluation.
+#
+# Keeping the architecture identical is deliberate: every checkpoint exports to
+# the same JSON format, so the desktop/Telegram apps and the tournament load it
+# with no changes at all.
+
+LU_ASTRA_LEARNING_RATE = 4e-4
+LU_ASTRA_LEARNING_RATE_FINAL = 1e-5
+LU_ASTRA_ENTROPY = 0.04
+LU_ASTRA_ENTROPY_FINAL = 0.002
+
+
+def train_lu_astra(
+    *,
+    updates: int = 8000,
+    games_per_update: int = 512,
+    player_counts: Sequence[int] = (3, 4, 5, 6, 7),
+    seed: int = 8_2026,
+    warm_start_games: int = 12000,
+    bc_epochs: int = 24,
+    bc_batch_size: int = 1024,
+    bc_learning_rate: float = 1e-3,
+    learning_rate: float = LU_ASTRA_LEARNING_RATE,
+    learning_rate_final: float | None = LU_ASTRA_LEARNING_RATE_FINAL,
+    batch_size: int = 1024,
+    ppo_epochs: int = 12,
+    clip_ratio: float = 0.2,
+    gamma: float = 0.99,
+    gae_lambda: float = 0.95,
+    entropy_coef: float = LU_ASTRA_ENTROPY,
+    entropy_coef_final: float | None = LU_ASTRA_ENTROPY_FINAL,
+    value_coef: float = 0.5,
+    value_clip: float | None = 0.2,
+    huber_delta: float | None = 1.0,
+    target_kl: float | None = 0.03,
+    l2: float = 0.0,
+    league_fraction: float = 0.75,
+    snapshot_every: int = 20,
+    snapshot_pool_size: int = 16,
+    snapshot_weight: float = 0.35,
+    selection_opponent_path: str | Path | None = "models/lu_sol.json",
+    head_to_head_games: int = 60,
+    checkpoint_every: int = 25,
+    checkpoint_dir: str | Path | None = "models/lu_astra-checkpoints",
+    hidden1: int = 1024,
+    hidden2: int = 512,
+    action_hidden: int = 512,
+    feature_version: int = LATEST_FEATURE_VERSION,
+    device: str | torch.device | None = "auto",
+    eval_every: int = 50,
+    eval_games: int = 80,
+    eval_seed_base: int = 50000,
+    supervised_model: Any | None = None,
+    output: str | Path = "models/lu_astra.json",
+    latest_path: str | Path | None = "models/lu_astra-latest.json",
+    metrics_path: str | Path = "models/lu_astra-metrics.json",
+    plot_path: str | Path | None = "plots/lu_astra-training.png",
+    resume: str | Path | None = None,
+    verbose: bool = True,
+) -> tuple[TorchActorCritic, dict[str, Any]]:
+    """Train ``lu_astra`` on the vectorised torch backend.
+
+    A thin preset over :func:`train_rl_torch`: the same network, simulator and
+    export path that produced ``lu_sol``, only larger and trained longer.  Every
+    returned checkpoint is a plain :class:`eightfm.rl.RLNetwork` JSON, so it
+    can be dropped into ``models/`` and used immediately.
+    """
+    return train_rl_torch(
+        updates=updates,
+        games_per_update=games_per_update,
+        player_counts=player_counts,
+        seed=seed,
+        warm_start_games=warm_start_games,
+        bc_epochs=bc_epochs,
+        bc_batch_size=bc_batch_size,
+        bc_learning_rate=bc_learning_rate,
+        learning_rate=learning_rate,
+        learning_rate_final=learning_rate_final,
+        batch_size=batch_size,
+        ppo_epochs=ppo_epochs,
+        clip_ratio=clip_ratio,
+        gamma=gamma,
+        gae_lambda=gae_lambda,
+        entropy_coef=entropy_coef,
+        entropy_coef_final=entropy_coef_final,
+        value_coef=value_coef,
+        value_clip=value_clip,
+        huber_delta=huber_delta,
+        target_kl=target_kl,
+        l2=l2,
+        league_fraction=league_fraction,
+        snapshot_every=snapshot_every,
+        snapshot_pool_size=snapshot_pool_size,
+        snapshot_weight=snapshot_weight,
+        selection_opponent_path=selection_opponent_path,
+        head_to_head_games=head_to_head_games,
+        checkpoint_every=checkpoint_every,
+        checkpoint_dir=checkpoint_dir,
+        hidden1=hidden1,
+        hidden2=hidden2,
+        action_hidden=action_hidden,
+        feature_version=feature_version,
+        device=device,
+        eval_every=eval_every,
+        eval_games=eval_games,
+        eval_seed_base=eval_seed_base,
+        supervised_model=supervised_model,
+        output=output,
+        latest_path=latest_path,
+        metrics_path=metrics_path,
+        plot_path=plot_path,
+        resume=resume,
+        verbose=verbose,
+    )

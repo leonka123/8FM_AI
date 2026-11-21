@@ -235,36 +235,50 @@ def main() -> int:
 
     lu_astra_parser = subparsers.add_parser(
         "train-lu-astra",
-        help="Train lu_astra, the ultimate policy (v3 features, cross-attention, 12h Kaggle GPU)",
+        help="Train lu_astra, the maximal policy (wider net + long torch PPO run)",
     )
     lu_astra_parser.add_argument("--updates", type=int, default=8000)
-    lu_astra_parser.add_argument("--games-per-update", type=int, default=1024)
-    lu_astra_parser.add_argument("--batch-size", type=int, default=2048)
+    lu_astra_parser.add_argument("--games-per-update", type=int, default=512)
+    lu_astra_parser.add_argument("--batch-size", type=int, default=1024)
     lu_astra_parser.add_argument("--ppo-epochs", type=int, default=12)
-    lu_astra_parser.add_argument("--learning-rate", type=float, default=5e-4)
+    lu_astra_parser.add_argument("--learning-rate", type=float, default=4e-4)
     lu_astra_parser.add_argument("--learning-rate-final", type=float, default=1e-5)
-    lu_astra_parser.add_argument("--warmup-steps", type=int, default=500)
-    lu_astra_parser.add_argument("--entropy-coef", type=float, default=0.05)
-    lu_astra_parser.add_argument("--entropy-coef-final", type=float, default=0.001)
-    lu_astra_parser.add_argument("--clip-eps", type=float, default=0.2)
-    lu_astra_parser.add_argument("--clip-eps-final", type=float, default=0.1)
-    lu_astra_parser.add_argument("--gae-lambda", type=float, default=0.97)
-    lu_astra_parser.add_argument("--gamma", type=float, default=0.995)
-    lu_astra_parser.add_argument("--target-kl", type=float, default=0.02)
-    lu_astra_parser.add_argument("--max-grad-norm", type=float, default=0.5)
-    lu_astra_parser.add_argument("--value-clip", type=float, default=0.5)
+    lu_astra_parser.add_argument("--entropy-coef", type=float, default=0.04)
+    lu_astra_parser.add_argument("--entropy-coef-final", type=float, default=0.002)
+    lu_astra_parser.add_argument("--clip-ratio", type=float, default=0.2)
+    lu_astra_parser.add_argument("--gae-lambda", type=float, default=0.95)
+    lu_astra_parser.add_argument("--gamma", type=float, default=0.99)
+    lu_astra_parser.add_argument("--target-kl", type=float, default=0.03)
+    lu_astra_parser.add_argument("--value-clip", type=float, default=0.2)
     lu_astra_parser.add_argument("--huber-delta", type=float, default=1.0)
-    lu_astra_parser.add_argument("--eval-every", type=int, default=40)
-    lu_astra_parser.add_argument("--eval-games", type=int, default=100)
+    lu_astra_parser.add_argument("--league-fraction", type=float, default=0.75)
     lu_astra_parser.add_argument("--snapshot-every", type=int, default=20)
-    lu_astra_parser.add_argument("--snapshot-pool-size", type=int, default=20)
+    lu_astra_parser.add_argument("--snapshot-pool-size", type=int, default=16)
+    lu_astra_parser.add_argument("--warm-start-games", type=int, default=12000)
+    lu_astra_parser.add_argument("--bc-epochs", type=int, default=24)
+    lu_astra_parser.add_argument("--hidden1", type=int, default=1024)
+    lu_astra_parser.add_argument("--hidden2", type=int, default=512)
+    lu_astra_parser.add_argument("--action-hidden", type=int, default=512)
+    lu_astra_parser.add_argument("--eval-every", type=int, default=50)
+    lu_astra_parser.add_argument("--eval-games", type=int, default=80)
+    lu_astra_parser.add_argument("--eval-seed-base", type=int, default=50000)
+    lu_astra_parser.add_argument("--head-to-head-games", type=int, default=60)
+    lu_astra_parser.add_argument(
+        "--selection-opponent",
+        default="models/lu_sol.json",
+        help="Champion checkpoint the best model must beat (use 'none' to disable)",
+    )
+    lu_astra_parser.add_argument("--no-selection-opponent", action="store_true")
+    lu_astra_parser.add_argument("--checkpoint-every", type=int, default=25)
+    lu_astra_parser.add_argument("--checkpoint-dir", default="models/lu_astra-checkpoints")
     lu_astra_parser.add_argument("--players", default="3,4,5,6,7")
-    lu_astra_parser.add_argument("--seed", type=int, default=42)
-    lu_astra_parser.add_argument("--device", default="auto", help="auto, cpu, cuda, cuda:0")
+    lu_astra_parser.add_argument("--seed", type=int, default=82026)
+    lu_astra_parser.add_argument("--device", default="auto", help="auto, cpu, cuda, cuda:0, mps")
     lu_astra_parser.add_argument("--output", default="models/lu_astra.json")
-    lu_astra_parser.add_argument("--resume", help="Continue from a lu_astra checkpoint (.pt file)")
-    lu_astra_parser.add_argument("--wandb", action="store_true", help="Log to Weights & Biases")
-    lu_astra_parser.add_argument("--wandb-project", type=str, default="8fm-astra")
+    lu_astra_parser.add_argument("--latest", default="models/lu_astra-latest.json")
+    lu_astra_parser.add_argument("--metrics", default="models/lu_astra-metrics.json")
+    lu_astra_parser.add_argument("--plot", default="plots/lu_astra-training.png")
+    lu_astra_parser.add_argument("--resume", help="Continue from a lu_astra RLNetwork JSON checkpoint")
 
     rl_play_parser = subparsers.add_parser(
         "play-rl",
@@ -608,46 +622,82 @@ def main() -> int:
         return 0
 
     if args.command == "train-lu-astra":
-        from .torch_astra import train_lu_astra
+        try:
+            from .torch_rl import resolve_device, train_lu_astra
+        except ImportError as error:
+            print(
+                f"Torch backend is unavailable: {error}. "
+                "Install torch (requirements-training.txt).",
+                file=sys.stderr,
+            )
+            return 2
 
         try:
             player_counts = _parse_player_counts(args.players)
-            device = args.device
-            if device == "auto":
-                device = "cuda" if torch.cuda.is_available() else "cpu"
+            selection_opponent_path = args.selection_opponent
+            if (
+                args.no_selection_opponent
+                or not selection_opponent_path
+                or selection_opponent_path.lower() == "none"
+            ):
+                selection_opponent_path = None
+            warm_start_games = 0 if args.resume else args.warm_start_games
+            checkpoint_dir = args.checkpoint_dir
+            if not checkpoint_dir or checkpoint_dir.lower() == "none":
+                checkpoint_dir = None
+            plot_path = args.plot
+            if not plot_path or plot_path.lower() == "none":
+                plot_path = None
             net, metrics = train_lu_astra(
-                total_updates=args.updates,
+                updates=args.updates,
                 games_per_update=args.games_per_update,
-                batch_size=args.batch_size,
-                ppo_epochs=args.ppo_epochs,
-                learning_rate=args.learning_rate,
-                learning_rate_final=args.learning_rate_final,
-                warmup_steps=args.warmup_steps,
-                entropy_coef=args.entropy_coef,
-                entropy_coef_final=args.entropy_coef_final,
-                clip_eps=args.clip_eps,
-                clip_eps_final=args.clip_eps_final,
-                gae_lambda=args.gae_lambda,
-                gamma=args.gamma,
-                target_kl=args.target_kl,
-                max_grad_norm=args.max_grad_norm,
-                value_clip=args.value_clip,
-                huber_delta=args.huber_delta,
-                eval_every=args.eval_every,
-                eval_games=args.eval_games,
-                snapshot_every=args.snapshot_every,
-                snapshot_pool_size=args.snapshot_pool_size,
                 player_counts=player_counts,
                 seed=args.seed,
-                device=device,
-                output_path=args.output,
+                warm_start_games=warm_start_games,
+                bc_epochs=args.bc_epochs,
+                learning_rate=args.learning_rate,
+                learning_rate_final=args.learning_rate_final,
+                batch_size=args.batch_size,
+                ppo_epochs=args.ppo_epochs,
+                clip_ratio=args.clip_ratio,
+                gae_lambda=args.gae_lambda,
+                gamma=args.gamma,
+                entropy_coef=args.entropy_coef,
+                entropy_coef_final=args.entropy_coef_final,
+                value_clip=args.value_clip,
+                huber_delta=args.huber_delta,
+                target_kl=args.target_kl,
+                league_fraction=args.league_fraction,
+                snapshot_every=args.snapshot_every,
+                snapshot_pool_size=args.snapshot_pool_size,
+                selection_opponent_path=selection_opponent_path,
+                head_to_head_games=args.head_to_head_games,
+                checkpoint_every=args.checkpoint_every,
+                checkpoint_dir=checkpoint_dir,
+                hidden1=args.hidden1,
+                hidden2=args.hidden2,
+                action_hidden=args.action_hidden,
+                device=resolve_device(args.device),
+                eval_every=args.eval_every,
+                eval_games=args.eval_games,
+                eval_seed_base=args.eval_seed_base,
+                output=args.output,
+                latest_path=args.latest,
+                metrics_path=args.metrics,
+                plot_path=plot_path,
+                resume=args.resume,
             )
-        except (OSError, ValueError, RuntimeError, ImportError) as error:
+        except (OSError, ValueError, RuntimeError) as error:
             print(f"lu_astra training failed: {error}", file=sys.stderr)
-            import traceback
-            traceback.print_exc()
             return 2
-        print(f"Training complete!")
+        print(
+            f"Best checkpoint: {args.output} "
+            f"(update {metrics.get('best_update')}, score {metrics.get('best_score', 0):.3f})"
+        )
+        print(f"Latest checkpoint: {args.latest}")
+        print(f"Metrics: {args.metrics}")
+        print(f"Plot: {args.plot}")
+        print(f"Elapsed: {metrics.get('seconds', 0):.1f}s")
         print(f"Model saved to: {args.output}")
         return 0
 

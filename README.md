@@ -80,7 +80,7 @@
 - [Скачать](#скачать) · [Подключение Telegram](#подключение-telegram-пошагово) · [Требования](#требования)
 - [Десктоп-приложение (окно + трей)](#десктоп-приложение-окно--трей) · [Ресурсы в пассивном режиме](#ресурсы-в-пассивном-режиме) · [Сборка `.exe`](#сборка-exe-windows)
 - [Автовыбор хода в Telegram](#автовыбор-хода-в-telegram-lu_luna) · [Игра в терминале](#игра-в-терминале)
-- [Модель lu_luna](#модель-lu_luna) · [Модель lu_sol (Kaggle)](#модель-lu_sol-kaggle) · [Ансамбль моделей](#ансамбль-моделей) · [RL-политика](#rl-политика)
+- [Модель lu_luna](#модель-lu_luna) · [Модель lu_sol (Kaggle)](#модель-lu_sol-kaggle) · [Модель lu_astra (Kaggle)](#модель-lu_astra-kaggle) · [Ансамбль моделей](#ансамбль-моделей) · [RL-политика](#rl-политика)
 - [Тесты](#тесты) · [Ограничения](#ограничения) · [Лицензия](#лицензия)
 
 ## Что внутри
@@ -342,6 +342,36 @@ python kaggle/train_lu_sol.py --work-dir /kaggle/working --backend torch --devic
 Без GPU: `--backend numpy --workers 4 --games-per-update 48` (или `--backend torch --device cpu`). Артефакты: `lu_sol.json` (лучшая модель), `lu_sol-latest.json` (для продолжения) и `lu_sol-metrics.json`. Флаги `--feature-version`, `--backend` и `--device` доступны и у `train-lu-sol`.
 
 > Расклад признаков `v2` несовместим со старыми чекпоинтами (`v1`), поэтому продолжать обучение `lu_sol` можно только из `lu_sol`-чекпоинтов. Старая `lu_luna` при этом работает как есть: сеть хранит свою версию признаков и загружается без изменений.
+
+## Модель lu_astra (Kaggle)
+
+`lu_astra` — самая сильная **развёртываемая** Classic-политика проекта (цель — в среднем 60+ очков). Она сознательно не меняет архитектуру: это тот же проверенный torch-движок, что дал `lu_sol`, — тот же симулятор, та же сеть `TorchActorCritic` и тот же экспорт в JSON `RLNetwork`, который грузят приложение и турнир. Поэтому чекпоинт `lu_astra` работает везде без правок кода.
+
+Что усилено по сравнению с `lu_sol`:
+
+- **Шире сеть.** `1024 / 512 / 512` вместо `512 / 256 / 256` (примерно вчетверо больше параметров).
+- **Дольше и стабильнее PPO.** 12 эпох на батч, 8000 обновлений, warm start 12000 игр и 24 эпохи behaviour cloning.
+- **Глубже лига.** 75% игр против лиги, пул снимков до 16, вес свежих снимков 0.35.
+- **Отбор против чемпиона.** Лучший чекпоинт выбирается по композитному скору, который поощряет победу над `models/lu_sol.json`, — сохраняется модель, которая реально обыгрывает `lu_sol`, а не просто ботов.
+- **Расписания.** learning rate `4e-4 → 1e-5`, entropy `0.04 → 0.002`.
+
+```powershell
+# локальный smoke-тест (секунды на CPU)
+python -X utf8 -m eightfm train-lu-astra --updates 2 --games-per-update 8 --players 3 --device cpu --hidden1 64 --hidden2 32 --action-hidden 32 --warm-start-games 4 --bc-epochs 1 --eval-every 0 --selection-opponent none --checkpoint-every 0
+
+# полный прогон на Kaggle GPU
+python kaggle/train_lu_astra.py --work-dir /kaggle/working --total-updates 8000 --time-budget-seconds 39600
+```
+
+Готовый ноутбук — `kaggle/lu_astra-training.ipynb`, пошаговая инструкция — `kaggle/README.md`, дизайн — `docs/lu_astra_design.md`. Драйвер возобновляемый: если сессия кончилась, повторный запуск продолжает с того же глобального шага, а расписание learning rate/энтропии остаётся монотонным.
+
+Артефакты: `lu_astra.json` (лучшая модель), `lu_astra-latest.json` (для продолжения), `lu_astra-metrics.json` (метрики всех чанков), `driver_state.json` и `checkpoints/`.
+
+После обучения добавьте её в турнир:
+
+```powershell
+python -X utf8 -m eightfm tournament --participants luna,sol,astra,supervised,greedy,rl_classic --astra models/lu_astra.json --games 100 --output tournament_astra_report.json
+```
 
 ## Ансамбль моделей
 

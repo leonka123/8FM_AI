@@ -1,417 +1,340 @@
-#!/usr/bin/env python3
-"""Kaggle training driver for lu_astra - the ultimate 8ФМ Classic policy.
+"""Resumable driver that trains the ``lu_astra`` 8FM policy on Kaggle GPU.
 
-Usage:
-    python train_lu_astra.py \
-        --updates 8000 \
-        --games-per-update 1024 \
-        --batch-size 2048 \
-        --device cuda \
-        --output models/lu_astra.json \
-        --resume models/lu_astra-latest.json
+``lu_astra`` is the maximal preset of the proven torch engine
+(:func:`eightfm.torch_rl.train_lu_astra`): the same ``RLNetwork`` architecture
+that produced ``lu_sol``, only wider (1024/512/512) and trained for a long,
+smoothly annealed run with a deeper league and a head-to-head selector against
+``lu_sol`` itself.
 
-This script is designed for 12-hour Kaggle GPU sessions with automatic
-checkpointing and resumability.
+Why a driver instead of one call
+--------------------------------
+A single Kaggle session is not always long enough for the whole run, so this
+driver trains in time-budgeted **chunks** and keeps enough state on disk that
+the next session continues exactly where the previous one stopped:
+
+* the latest weights (``lu_astra-latest.json``) are the resume point;
+* ``driver_state.json`` records the global update counter and the best score so
+  the learning-rate / entropy anneal stays **monotone** across sessions;
+* the globally-best checkpoint is kept separately from the latest one.
+
+Typical Kaggle use (GPU accelerator, Internet On)::
+
+    git clone https://github.com/leonka123/8FM_AI repo
+    cd repo
+    python kaggle/train_lu_astra.py --work-dir /kaggle/working \
+        --total-updates 8000 --time-budget-seconds 39600
+
+Re-running the same command in the next session resumes automatically.
+
+Nothing here is Kaggle-specific, and on Windows the script must be import-safe,
+which is why all work happens under ``main()``.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
-import math
 import os
-import random
 import shutil
 import sys
 import time
-from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any
-
-import numpy as np
-import torch
-
-# Add project root to path
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-from eightfm.torch_astra import (
-    AstraNetwork,
-    PPOTrainerV3,
-    PPOConfig,
-    train_lu_astra,
-    FEATURE_VERSION_V3,
-    state_features_v3,
-    BatchedClassicEnvV3,
-)
 
 
-@dataclass
-class TrainingMetrics:
-    update: int
-    timestamp: float
-    policy_loss: float
-    value_loss: float
-    entropy: float
-    kl: float
-    lr: float
-    entropy_coef: float
-    clip_eps: float
-    # Evaluation metrics
-    combo_win_rate: float = 0.0
-    greedy_win_rate: float = 0.0
-    supervised_win_rate: float = 0.0
-    rl_classic_win_rate: float = 0.0
-    lu_luna_win_rate: float = 0.0
-    lu_sol_win_rate: float = 0.0
-    mean_score: float = 0.0
-    success_rate: float = 0.0
+def _find_repo_root(start: Path) -> Path:
+    """Walk upwards until the ``eightfm`` package is found."""
+    for candidate in [start, *start.parents]:
+        if (candidate / "eightfm" / "__init__.py").exists():
+            return candidate
+    raise SystemExit(
+        "Не удалось найти пакет 'eightfm'. Запустите драйвер из клона репозитория "
+        "или укажите --repo с его корнем."
+    )
 
 
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Train lu_astra on Kaggle GPU")
-    parser.add_argument("--updates", type=int, default=8000, help="Total PPO updates")
-    parser.add_argument("--games-per-update", type=int, default=1024, help="Games per update")
-    parser.add_argument("--batch-size", type=int, default=2048, help="Minibatch size")
-    parser.add_argument("--ppo-epochs", type=int, default=12, help="PPO epochs per update")
-    parser.add_argument("--learning-rate", type=float, default=5e-4, help="Initial learning rate")
-    parser.add_argument("--learning-rate-final", type=float, default=1e-5, help="Final learning rate")
-    parser.add_argument("--warmup-steps", type=int, default=500, help="LR warmup steps")
-    parser.add_argument("--entropy-coef", type=float, default=0.05, help="Initial entropy coefficient")
-    parser.add_argument("--entropy-coef-final", type=float, default=0.001, help="Final entropy coefficient")
-    parser.add_argument("--gae-lambda", type=float, default=0.97, help="GAE lambda")
-    parser.add_argument("--gamma", type=float, default=0.995, help="Discount factor")
-    parser.add_argument("--clip-eps", type=float, default=0.2, help="Initial PPO clip epsilon")
-    parser.add_argument("--clip-eps-final", type=float, default=0.1, help="Final PPO clip epsilon")
-    parser.add_argument("--target-kl", type=float, default=0.02, help="Target KL divergence")
-    parser.add_argument("--max-grad-norm", type=float, default=0.5, help="Max gradient norm")
-    parser.add_argument("--value-clip", type=float, default=0.5, help="Value function clip")
-    parser.add_argument("--huber-delta", type=float, default=1.0, help="Huber loss delta")
-    parser.add_argument("--eval-every", type=int, default=40, help="Evaluate every N updates")
-    parser.add_argument("--eval-games", type=int, default=100, help="Games per opponent per eval")
-    parser.add_argument("--snapshot-every", type=int, default=20, help="Save snapshot every N updates")
-    parser.add_argument("--snapshot-pool-size", type=int, default=20, help="Snapshot pool size")
-    parser.add_argument("--player-counts", type=str, default="3,4,5,6,7", help="Player counts to train on")
-    parser.add_argument("--seed", type=int, default=42, help="Random seed")
-    parser.add_argument("--device", type=str, default="auto", choices=["auto", "cuda", "cpu"], help="Device")
-    parser.add_argument("--output", type=str, default="models/lu_astra.json", help="Output model path")
-    parser.add_argument("--resume", type=str, default=None, help="Resume from checkpoint")
-    parser.add_argument("--wandb", action="store_true", help="Log to Weights & Biases")
-    parser.add_argument("--wandb-project", type=str, default="8fm-astra", help="W&B project name")
-    return parser.parse_args()
+def _lerp(start: float, end: float, fraction: float) -> float:
+    fraction = min(1.0, max(0.0, fraction))
+    return start + (end - start) * fraction
 
 
-def setup_device(device_arg: str) -> torch.device:
-    if device_arg == "auto":
-        return torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    return torch.device(device_arg)
+def _load_state(path: Path) -> dict:
+    if path.exists():
+        try:
+            return json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            pass
+    return {"global_step": 0, "best_score": float("-inf"), "chunks": 0}
 
 
-def set_seeds(seed: int) -> None:
-    torch.manual_seed(seed)
-    np.random.seed(seed)
-    random.seed(seed)
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(seed)
-        torch.backends.cudnn.deterministic = True
-        torch.backends.cudnn.benchmark = False
-
-
-def save_checkpoint(
-    model: AstraNetwork,
-    optimizer: torch.optim.Optimizer,
-    scheduler: torch.optim.lr_scheduler._LRScheduler,
-    metrics: list[TrainingMetrics],
-    update: int,
-    config: PPOConfig,
-    path: Path,
-) -> None:
+def _save_state(path: Path, state: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    torch.save({
-        "model_state": model.state_dict(),
-        "optimizer_state": optimizer.state_dict(),
-        "scheduler_state": scheduler.state_dict() if scheduler else None,
-        "metrics": [asdict(m) for m in metrics],
-        "update": update,
-        "config": asdict(config),
-        "feature_version": FEATURE_VERSION_V3,
-        "timestamp": time.time(),
-    }, path)
-
-
-def load_checkpoint(path: Path, model: AstraNetwork, optimizer: torch.optim.Optimizer,
-                    scheduler: torch.optim.lr_scheduler._LRScheduler) -> tuple[int, list[TrainingMetrics]]:
-    checkpoint = torch.load(path, map_location="cpu")
-    model.load_state_dict(checkpoint["model_state"])
-    optimizer.load_state_dict(checkpoint["optimizer_state"])
-    if scheduler and checkpoint.get("scheduler_state"):
-        scheduler.load_state_dict(checkpoint["scheduler_state"])
-    metrics = [TrainingMetrics(**m) for m in checkpoint.get("metrics", [])]
-    update = checkpoint.get("update", 0)
-    print(f"Resumed from update {update} ({len(metrics)} metrics entries)")
-    return update, metrics
-
-
-def evaluate_model(
-    model: AstraNetwork,
-    device: torch.device,
-    games: int = 100,
-    player_counts: tuple[int, ...] = (3, 4, 5, 6, 7),
-) -> dict[str, float]:
-    """Evaluate model against baselines."""
-    from eightfm.baselines import ComboPolicy, GreedyPolicy, SupervisedPolicy
-    from eightfm.rl import RLGreedyPolicy, load_rl
-    from eightfm.policy import load_policy
-    from eightfm.rl_train import evaluate_controlled_seat
-    from eightfm.torch_astra import AstraPolicy
-
-    model.eval()
-    policy = AstraPolicy(model, device)
-
-    opponents = {
-        "combo": ComboPolicy(),
-        "greedy": GreedyPolicy(),
-        "supervised": SupervisedPolicy(load_policy("models/classic-policy.json")),
-        "rl_classic": RLGreedyPolicy(load_rl("models/classic-rl.json")),
-        "lu_luna": RLGreedyPolicy(load_rl("models/lu_luna.json")),
-        "lu_sol": RLGreedyPolicy(load_rl("models/lu_sol.json")),
-    }
-
-    results = {}
-    for name, opp in opponents.items():
-        win_rates = []
-        scores = []
-        for n in player_counts:
-            report = evaluate_controlled_seat(policy, opp, player_count=n, games=games // len(player_counts), seed=10000 + n * 100)
-            win_rates.append(report["win_rate"])
-            scores.append(report["mean_score"])
-        results[f"{name}_win_rate"] = float(np.mean(win_rates))
-        results[f"{name}_mean_score"] = float(np.mean(scores))
-
-    # Composite metrics
-    all_win_rates = [results.get(f"{k}_win_rate", 0) for k in opponents]
-    all_scores = [results.get(f"{k}_mean_score", 0) for k in opponents]
-    results["avg_win_rate"] = float(np.mean(all_win_rates))
-    results["avg_score"] = float(np.mean(all_scores))
-    results["vs_lu_sol_win_rate"] = results.get("lu_sol_win_rate", 0)
-
-    return results
-
-
-def main() -> int:
-    args = parse_args()
-    device = setup_device(args.device)
-    set_seeds(args.seed)
-
-    print(f"Device: {device}")
-    print(f"PyTorch: {torch.__version__}")
-    if device.type == "cuda":
-        print(f"GPU: {torch.cuda.get_device_name()}")
-        print(f"Memory: {torch.cuda.get_device_properties(0).total_memory / 1e9:.1f} GB")
-
-    # Parse player counts
-    player_counts = tuple(int(x) for x in args.player_counts.split(","))
-
-    # Create config
-    config = PPOConfig(
-        lr=args.learning_rate,
-        lr_final=args.learning_rate_final,
-        warmup_steps=args.warmup_steps,
-        total_updates=args.updates,
-        games_per_update=args.games_per_update,
-        batch_size=args.batch_size,
-        ppo_epochs=args.ppo_epochs,
-        clip_eps=args.clip_eps,
-        clip_eps_final=args.clip_eps_final,
-        gae_lambda=args.gae_lambda,
-        gamma=args.gamma,
-        entropy_coef=args.entropy_coef,
-        entropy_coef_final=args.entropy_coef_final,
-        value_coef=0.5,
-        max_grad_norm=args.max_grad_norm,
-        target_kl=args.target_kl,
-        huber_delta=args.huber_delta,
-        value_clip=args.value_clip,
+    path.write_text(
+        json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8"
     )
 
-    # Initialize model
-    test_env = BatchedClassicEnvV3(player_count=4, batch_size=1, device=device, seed=0)
-    test_obs = test_env.observation()
-    test_state = state_features_v3(test_obs, seat=0)
-    state_dim = test_state.shape[1]
-    action_dim = 80  # v3 action features
 
-    print(f"State dim: {state_dim}, Action dim: {action_dim}")
-
-    model = AstraNetwork(
-        state_dim=state_dim,
-        action_dim=action_dim,
-        hidden_dim=512,
-        num_residual_blocks=4,
-        num_heads=8,
-        feature_version=FEATURE_VERSION_V3,
-        seed=args.seed,
-    ).to(device)
-
-    optimizer = torch.optim.AdamW(model.parameters(), lr=config.lr, weight_decay=1e-5)
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-        optimizer, T_max=config.total_updates - config.warmup_steps, eta_min=config.lr_final
+def _merge_metrics(target: Path, chunk: dict, global_start: int) -> None:
+    """Append one chunk's metrics to a combined file for later plotting."""
+    if target.exists():
+        try:
+            combined = json.loads(target.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            combined = None
+    else:
+        combined = None
+    if not combined or combined.get("format") != "eightfm-rl-training-metrics":
+        combined = {
+            "format": "eightfm-rl-training-metrics",
+            "config": chunk.get("config", {}),
+            "chunks": [],
+            "updates": [],
+            "evaluations": [],
+        }
+    combined["config"] = chunk.get("config", combined.get("config", {}))
+    combined.setdefault("chunks", []).append(
+        {
+            "global_start": global_start,
+            "updates": chunk.get("updates", []),
+            "evaluations": chunk.get("evaluations", []),
+            "best_score": chunk.get("best_score"),
+            "seconds": chunk.get("seconds"),
+        }
+    )
+    combined["updates"].extend(chunk.get("updates", []))
+    combined["evaluations"].extend(chunk.get("evaluations", []))
+    combined["best_score"] = max(
+        float(combined.get("best_score", float("-inf"))),
+        float(chunk.get("best_score", float("-inf"))),
+    )
+    target.write_text(
+        json.dumps(combined, ensure_ascii=False, indent=2), encoding="utf-8"
     )
 
-    trainer = PPOTrainerV3(model, config, device, player_counts)
 
-    # Resume if requested
-    start_update = 0
-    metrics_history = []
-    if args.resume:
-        resume_path = Path(args.resume)
-        if resume_path.exists():
-            if resume_path.suffix == ".pt":
-                start_update, metrics_history = load_checkpoint(resume_path, model, optimizer, scheduler)
-            else:
-                print(f"Warning: {resume_path} is not a .pt checkpoint, starting fresh")
-        else:
-            print(f"Warning: Resume path {resume_path} not found, starting fresh")
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description="Resumable training driver for the 'lu_astra' 8FM policy."
+    )
+    parser.add_argument(
+        "--repo", default=None,
+        help="Repository root (defaults to auto-detection from this file)",
+    )
+    parser.add_argument(
+        "--work-dir", default="/kaggle/working",
+        help="Where checkpoints live; keep this on persistent storage between runs",
+    )
+    parser.add_argument("--total-updates", type=int, default=8000)
+    parser.add_argument("--chunk-updates", type=int, default=200)
+    parser.add_argument("--games-per-update", type=int, default=512)
+    parser.add_argument("--batch-size", type=int, default=1024)
+    parser.add_argument("--ppo-epochs", type=int, default=12)
+    parser.add_argument("--warm-start-games", type=int, default=12000)
+    parser.add_argument("--bc-epochs", type=int, default=24)
 
-    # Training loop
-    print(f"Starting training from update {start_update} to {args.updates}")
-    print(f"Config: {config}")
+    # Network width — the architectural uplift over lu_sol.
+    parser.add_argument("--hidden1", type=int, default=1024)
+    parser.add_argument("--hidden2", type=int, default=512)
+    parser.add_argument("--action-hidden", type=int, default=512)
 
-    best_score = -1.0
-    best_update = 0
+    # League / evaluation.
+    parser.add_argument("--league-fraction", type=float, default=0.75)
+    parser.add_argument("--snapshot-every", type=int, default=20)
+    parser.add_argument("--snapshot-pool-size", type=int, default=16)
+    parser.add_argument(
+        "--selection-opponent", default="models/lu_sol.json",
+        help="Champion checkpoint the best model must beat ('none' to disable)",
+    )
+    parser.add_argument("--head-to-head-games", type=int, default=60)
+    parser.add_argument("--eval-every", type=int, default=50)
+    parser.add_argument("--eval-games", type=int, default=80)
+
+    parser.add_argument(
+        "--device", default="auto",
+        help="Torch device: auto, cpu, cuda, cuda:0, mps",
+    )
+    parser.add_argument("--seed", type=int, default=82026)
+    parser.add_argument(
+        "--time-budget-seconds", type=int, default=39600,
+        help="Stop cleanly before this many seconds so the session can save (0 = no limit)",
+    )
+    parser.add_argument(
+        "--min-chunk-seconds", type=int, default=600,
+        help="Do not start another chunk if less than this much budget remains",
+    )
+    parser.add_argument(
+        "--reset", action="store_true",
+        help="Ignore any existing driver state and start from scratch",
+    )
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = build_parser().parse_args(argv)
+
+    repo = Path(args.repo).resolve() if args.repo else _find_repo_root(
+        Path(__file__).resolve().parent
+    )
+    sys.path.insert(0, str(repo))
 
     try:
-        for update in range(start_update, args.updates):
-            # Curriculum
-            if update < 500:
-                trainer.league_opponents = []
-            elif update < 1500:
-                from eightfm.baselines import ComboPolicy, GreedyPolicy
-                trainer.league_opponents = [ComboPolicy(), GreedyPolicy()]
-                trainer.league_weights = [0.7, 0.3]
-            elif update < 4000:
-                from eightfm.baselines import ComboPolicy, GreedyPolicy, SupervisedPolicy
-                from eightfm.rl import RLGreedyPolicy, load_rl
-                from eightfm.policy import load_policy
-                trainer.league_opponents = [
-                    ComboPolicy(),
-                    GreedyPolicy(),
-                    RLGreedyPolicy(load_rl("models/classic-rl.json")),
-                    SupervisedPolicy(load_policy("models/classic-policy.json")),
-                ]
-                trainer.league_weights = [0.3, 0.2, 0.3, 0.2]
-            elif update < 6500:
-                from eightfm.baselines import ComboPolicy, GreedyPolicy
-                from eightfm.rl import RLGreedyPolicy, load_rl
-                trainer.league_opponents = [
-                    ComboPolicy(),
-                    GreedyPolicy(),
-                    RLGreedyPolicy(load_rl("models/classic-rl.json")),
-                    RLGreedyPolicy(load_rl("models/lu_luna.json")),
-                    RLGreedyPolicy(load_rl("models/lu_sol.json")),
-                ]
-                trainer.league_weights = [0.15, 0.1, 0.15, 0.3, 0.3]
-            else:
-                trainer.league_opponents = trainer.league_opponents[-5:]
-                trainer.league_weights = [0.2] * len(trainer.league_opponents)
+        from eightfm.torch_rl import (  # noqa: E402
+            LU_ASTRA_ENTROPY,
+            LU_ASTRA_ENTROPY_FINAL,
+            LU_ASTRA_LEARNING_RATE,
+            LU_ASTRA_LEARNING_RATE_FINAL,
+            resolve_device,
+            train_lu_astra,
+        )
+    except ImportError as error:
+        raise SystemExit(
+            f"Torch backend is unavailable ({error}). Install torch "
+            "(see requirements-training.txt)."
+        ) from error
 
-            # Rollout
-            rollout_data = trainer.rollout(config.games_per_update)
+    device = resolve_device(args.device)
 
-            # PPO Update
-            update_metrics = trainer.update(rollout_data)
-            update_metrics["update"] = update
+    work = Path(args.work_dir)
+    work.mkdir(parents=True, exist_ok=True)
 
-            # Logging
-            if update % 10 == 0:
-                print(f"Update {update}: policy_loss={update_metrics['policy_loss']:.4f}, "
-                      f"value_loss={update_metrics['value_loss']:.4f}, "
-                      f"entropy={update_metrics['entropy']:.4f}, kl={update_metrics['kl']:.4f}, "
-                      f"lr={update_metrics['lr']:.2e}")
+    best_path = work / "lu_astra.json"
+    latest_path = work / "lu_astra-latest.json"
+    # The per-chunk call writes its in-chunk best here; the driver folds it
+    # into the global best so a weak later chunk cannot overwrite a strong one.
+    chunk_best_path = work / ".chunk-best.json"
+    chunk_metrics_path = work / ".chunk-metrics.json"
+    combined_metrics_path = work / "lu_astra-metrics.json"
+    checkpoint_dir = work / "checkpoints"
+    state_path = work / "driver_state.json"
 
-            # Evaluation
-            if update % args.eval_every == 0 and update > 0:
-                eval_metrics = evaluate_model(model, device, args.eval_games, player_counts)
-                update_metrics.update(eval_metrics)
+    if args.reset:
+        for stale in (state_path, latest_path, chunk_best_path):
+            stale.unlink(missing_ok=True)
+        print("[driver] --reset: starting a fresh run")
 
-                composite = (eval_metrics["vs_lu_sol_win_rate"] * 0.4 +
-                           eval_metrics["avg_score"] / 100.0 * 0.3 +
-                           eval_metrics.get("success_rate", 0) * 0.3)
+    state = _load_state(state_path)
+    global_step = int(state.get("global_step", 0))
+    best_score = float(state.get("best_score", float("-inf")))
 
-                print(f"  Eval: vs_lu_sol={eval_metrics['vs_lu_sol_win_rate']:.3f}, "
-                      f"avg_score={eval_metrics['avg_score']:.2f}, "
-                      f"composite={composite:.3f}")
+    print("=" * 68)
+    print(" lu_astra — resumable training driver")
+    print(f" repo         : {repo}")
+    print(f" work dir     : {work}")
+    print(f" resume step  : {global_step}/{args.total_updates}")
+    print(
+        f" best score   : {best_score:.4f}"
+        if best_score > float("-inf")
+        else " best score   : —"
+    )
+    print(f" device       : {device}")
+    print(f" net          : {args.hidden1}/{args.hidden2}/{args.action_hidden}")
+    print(f" games/update : {args.games_per_update}")
+    print(f" time budget  : {args.time_budget_seconds or '∞'} s")
+    print("=" * 68)
 
-                # Save best
-                if composite > best_score:
-                    best_score = composite
-                    best_update = update
-                    # Save as latest
-                    from eightfm.rl import save_rl
-                    from eightfm.torch_astra import astra_to_rl_network
-                    rl_net = astra_to_rl_network(model, metadata={
-                        "training_updates": update,
-                        "eval_metrics": eval_metrics,
-                        "composite_score": composite,
-                        "feature_version": FEATURE_VERSION_V3,
-                    })
-                    save_rl(rl_net, args.output.replace(".json", "-latest.json"))
-                    print(f"  New best! Composite: {composite:.3f}")
+    if global_step >= args.total_updates:
+        print("[driver] Target already reached. Nothing to do.")
+        return 0
 
-                # Save periodic checkpoint
-                if update % args.snapshot_every == 0:
-                    ckpt_path = Path(args.output).parent / f"lu_astra-ckpt-{update}.pt"
-                    save_checkpoint(model, optimizer, scheduler, metrics_history, update, config, ckpt_path)
+    start_time = time.time()
+    first_chunk = True
+    while global_step < args.total_updates:
+        elapsed = time.time() - start_time
+        remaining_budget = (
+            args.time_budget_seconds - elapsed
+            if args.time_budget_seconds
+            else float("inf")
+        )
+        if remaining_budget < args.min_chunk_seconds:
+            print(
+                f"[driver] {remaining_budget:.0f}s left — below the minimum chunk "
+                "time, stopping to let the session save."
+            )
+            break
 
-            metrics_history.append(TrainingMetrics(
-                update=update,
-                timestamp=time.time(),
-                policy_loss=update_metrics["policy_loss"],
-                value_loss=update_metrics["value_loss"],
-                entropy=update_metrics["entropy"],
-                kl=update_metrics["kl"],
-                lr=update_metrics["lr"],
-                entropy_coef=update_metrics["entropy_coef"],
-                clip_eps=update_metrics["clip_eps"],
-            ))
+        chunk = min(args.chunk_updates, args.total_updates - global_step)
+        span = max(1, args.total_updates)
+        lr_start = _lerp(LU_ASTRA_LEARNING_RATE, LU_ASTRA_LEARNING_RATE_FINAL, global_step / span)
+        lr_end = _lerp(LU_ASTRA_LEARNING_RATE, LU_ASTRA_LEARNING_RATE_FINAL, (global_step + chunk) / span)
+        ent_start = _lerp(LU_ASTRA_ENTROPY, LU_ASTRA_ENTROPY_FINAL, global_step / span)
+        ent_end = _lerp(LU_ASTRA_ENTROPY, LU_ASTRA_ENTROPY_FINAL, (global_step + chunk) / span)
 
-            # Save metrics JSON periodically
-            if update % 50 == 0:
-                metrics_path = Path(args.output).parent / "lu_astra-metrics.json"
-                metrics_path.write_text(json.dumps([asdict(m) for m in metrics_history], indent=2))
+        resume = str(latest_path) if latest_path.exists() else None
+        warm_start = args.warm_start_games if (first_chunk and resume is None) else 0
 
-    except KeyboardInterrupt:
-        print("\nInterrupted! Saving checkpoint...")
-    except Exception as e:
-        print(f"\nError: {e}")
-        import traceback
-        traceback.print_exc()
-    finally:
-        # Save final checkpoint
-        ckpt_path = Path(args.output).parent / "lu_astra-final.pt"
-        save_checkpoint(model, optimizer, scheduler, metrics_history, args.updates, config, ckpt_path)
+        print(
+            f"\n[driver] chunk {state.get('chunks', 0) + 1}: "
+            f"steps {global_step}→{global_step + chunk} "
+            f"(lr {lr_start:.2e}→{lr_end:.2e}, ent {ent_start:.3f}→{ent_end:.3f}, "
+            f"warm_start={warm_start}, resume={'yes' if resume else 'no'})"
+        )
 
-        # Save final model
-        from eightfm.rl import save_rl
-        from eightfm.torch_astra import astra_to_rl_network
-        rl_net = astra_to_rl_network(model, metadata={
-            "training_updates": args.updates,
-            "best_update": best_update,
-            "best_composite_score": best_score,
-            "feature_version": FEATURE_VERSION_V3,
-        })
-        save_rl(rl_net, args.output)
+        _, metrics = train_lu_astra(
+            updates=chunk,
+            games_per_update=args.games_per_update,
+            batch_size=args.batch_size,
+            ppo_epochs=args.ppo_epochs,
+            seed=args.seed,
+            warm_start_games=warm_start,
+            bc_epochs=args.bc_epochs,
+            learning_rate=lr_start,
+            learning_rate_final=lr_end,
+            entropy_coef=ent_start,
+            entropy_coef_final=ent_end,
+            league_fraction=args.league_fraction,
+            snapshot_every=args.snapshot_every,
+            snapshot_pool_size=args.snapshot_pool_size,
+            selection_opponent_path=args.selection_opponent,
+            head_to_head_games=args.head_to_head_games,
+            hidden1=args.hidden1,
+            hidden2=args.hidden2,
+            action_hidden=args.action_hidden,
+            device=device,
+            eval_every=args.eval_every,
+            eval_games=args.eval_games,
+            resume=resume,
+            output=chunk_best_path,
+            latest_path=latest_path,
+            metrics_path=chunk_metrics_path,
+            checkpoint_dir=checkpoint_dir,
+            plot_path=None,
+            verbose=True,
+        )
 
-        # Save metrics
-        metrics_path = Path(args.output).parent / "lu_astra-metrics.json"
-        metrics_path.write_text(json.dumps([asdict(m) for m in metrics_history], indent=2))
+        global_step += chunk
+        state["global_step"] = global_step
+        state["chunks"] = int(state.get("chunks", 0)) + 1
 
-        print(f"\nTraining complete!")
-        print(f"Best update: {best_update}, Best composite: {best_score:.3f}")
-        print(f"Model saved to: {args.output}")
-        print(f"Metrics saved to: {metrics_path}")
+        chunk_best = float(metrics.get("best_score", float("-inf")))
+        if chunk_best > best_score and chunk_best_path.exists():
+            best_score = chunk_best
+            shutil.copyfile(chunk_best_path, best_path)
+            print(f"[driver] new global best {best_score:.4f} -> {best_path.name}")
 
+        state["best_score"] = best_score
+        _save_state(state_path, state)
+        _merge_metrics(combined_metrics_path, metrics, global_step - chunk)
+
+        print(
+            f"[driver] progress {global_step}/{args.total_updates} "
+            f"({100 * global_step / max(1, args.total_updates):.1f}%) | "
+            f"elapsed {time.time() - start_time:.0f}s"
+        )
+        first_chunk = False
+
+    print("\n" + "=" * 68)
+    print("[driver] finished this session")
+    print(f" latest : {latest_path}")
+    print(f" best   : {best_path}  (score {best_score:.4f})")
+    print(f" metrics: {combined_metrics_path}")
+    print(f" step   : {global_step}/{args.total_updates}")
+    print(" Re-run the same command to continue; download the JSON checkpoints")
+    print(" from the notebook's Output tab to use them on your laptop.")
+    print("=" * 68)
     return 0
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    os.environ.setdefault("OMP_NUM_THREADS", "1")
+    os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
+    os.environ.setdefault("MKL_NUM_THREADS", "1")
+    raise SystemExit(main())

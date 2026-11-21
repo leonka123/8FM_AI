@@ -1,191 +1,139 @@
-# lu_astra — Ultimate 8ФМ Classic Policy Design
+# lu_astra — the maximal 8ФМ Classic policy
 
-**Goal**: Create the strongest possible 8ФМ Classic RL policy that averages **60+ points** and dominates all existing policies (lu_sol, lu_luna, supervised, greedy, rl_classic).
+**Goal**: the strongest deployable 8ФМ Classic policy, targeting a **60+ point**
+average, trained on a Kaggle GPU in a single ~12-hour overnight session.
 
-**Training Budget**: 12 hours on Kaggle GPU (T4×2 or P100)
+`lu_astra` is deliberately **not** a new architecture. It is the proven torch
+engine that produced `lu_sol` — the same simulator, the same `TorchActorCritic`
+network, the same `RLNetwork` JSON export — pushed as far as the GPU budget
+allows. That choice is what makes the result actually usable: every checkpoint
+loads in the desktop/Telegram apps and the tournament with no code changes.
 
----
-
-## 1. Feature Engineering v3 (Major Upgrade)
-
-Current v2: 158 state + 32 action features
-
-### v3 State Features (target: ~280-320)
-| Category | Current | v3 Additions | Rationale |
-|----------|---------|--------------|-----------|
-| Hand cards | 36 | +18 (combo potential flags per card) | Know which cards form combos |
-| Open cards | 36 | +18 (opponent-specific open cards) | Track each opponent separately |
-| Round info | 4 | +8 (round phase, cards left in deck) | Endgame awareness |
-| Score state | 5 | +15 (per-opponent score diffs, rank) | Relative standing matters |
-| Alexey/Marat | 4 | +8 (detector count, global Alexey tracker) | Critical scoring mechanics |
-| **Position** | 0 | **+12** (dealer pos, pass direction, seat) | Position determines pass strategy |
-| **Memory** | 0 | **+40** (cards seen this game, per suit/rank) | Card counting = huge edge |
-| **Opponent modeling** | 0 | **+24** (last 3 actions per opponent) | Predict opponent plays |
-| **Combo tracking** | 0 | **+12** (combo completeness per type) | Know which combos are live |
-| **Potential** | 0 | **+10** (max possible score from hand) | Upper bound estimation |
-
-### v3 Action Features (target: ~60-80)
-| Category | Current | v3 Additions |
-|----------|---------|--------------|
-| Card identity | 18 | +18 (combo role: key/support/flex) |
-| Open/closed | 2 | +2 (opponent-specific legality) |
-| Score delta | 1 | +5 (immediate + projected round score) |
-| Combo completion | 0 | **+12** (does this complete a combo?) |
-| Bluff value | 0 | **+6** (deceptive play value) |
-| Position value | 0 | **+4** (pass direction advantage) |
-
-**Total v3**: ~300 state + ~70 action = **~370 dimensions** (2.3× v2)
+> Earlier drafts of this document proposed v3 features, cross-attention and
+> residual stacks. Those were removed: they could not be exported to the
+> `RLNetwork` JSON the app loads, and the scaffold never trained. Everything
+> below matches the shipped code.
 
 ---
 
-## 2. Network Architecture (Major Upgrade)
+## 1. What is reused (unchanged, parity-tested)
 
-Current: 512 → 256 → 256 (shared trunk, policy/value heads)
+| Component | File | Notes |
+|-----------|------|-------|
+| Batched GPU simulator | `eightfm/torch_env.py` | Vectorised twin of `eightfm.env`; parity-tested |
+| Features v2 | `eightfm/env.py` | 158 state + 32 action; `torch_env` mirrors them |
+| Network | `TorchActorCritic` | Same shapes as `RLNetwork`; straight export |
+| Trainer | `train_rl_torch` | PPO + behaviour-cloning warm start + league |
+| Export | `to_rl_network` / `save_rl` | Plain `RLNetwork` JSON |
 
-### lu_astra Architecture
-```
-Input: 370 (state) + 70×N (action) per action
-        │
-        ▼
-    [State Encoder] ──► 512 ──► LayerNorm ──► ReLU
-        │                 │
-        │                 ▼
-        │            [Residual Block 1] 512→512 (×2)
-        │                 │
-        │                 ▼
-        │            [Residual Block 2] 512→512 (×2)
-        │                 │
-        ▼                 ▼
-[Action Encoder] ◄─── [Cross-Attention] ◄── State features
-  (per action)         (8 heads, 64 dim)
-        │
-        ▼
-    [Joint Encoder] 512 → 256 (shared)
-        │
-        ├──► Policy Head: 256 → 128 → N_actions (masked logits)
-        │
-        └──► Value Head:  256 → 128 → 1 (scalar)
-```
-
-**Key innovations**:
-- **Cross-attention** between state and each action (learns action-state interaction)
-- **Residual blocks** with LayerNorm (deeper without degradation)
-- **Separate state/action encoders** then joint fusion (more capacity)
-- **Tabular-nums output** for value head (stable regression)
-
-**Parameters**: ~4.2M (vs ~1.8M for lu_sol) — fits easily in GPU memory
+Everything that worked for `lu_sol` is untouched, so there is no new parity
+surface and no deployment risk.
 
 ---
 
-## 3. Training Scale (12-Hour Budget)
+## 2. What `lu_astra` changes (the uplift)
 
-| Param | lu_sol | lu_astra | Rationale |
-|-------|--------|----------|-----------|
-| updates | 3,000 | **8,000** | 2.7× more gradient steps |
-| games_per_update | 512 | **1,024** | Larger batch = better gradient estimate |
-| warm_start_games | 6,000 | **15,000** | Stronger BC initialization |
-| bc_epochs | 16 | **24** | More supervised pretraining |
-| ppo_epochs | 8 | **12** | More PPO passes per batch |
-| batch_size | 1,024 | **2,048** | Larger minibatches |
-| eval_every | 50 | **40** | More frequent checkpoints |
-| eval_games | 60 | **100** | More reliable evaluation |
-| snapshot_pool | 12 | **20** | Deeper league |
+Implemented as a preset wrapper, `eightfm.torch_rl.train_lu_astra`, over
+`train_rl_torch`.
 
-**Estimated games**: 8,000 × 1,024 = **8.2M games** (vs 1.5M for lu_sol)
-**Estimated time**: ~10-11 hours on T4×2 (leaves buffer)
+| Parameter | `lu_sol` | `lu_astra` | Why |
+|-----------|----------|------------|-----|
+| hidden1 / hidden2 / action_hidden | 512 / 256 / 256 | **1024 / 512 / 512** | ~4× parameters; more expressive policy |
+| updates (target) | 6000 | **8000** | longer anneal |
+| games per update | 512 | 512 | same GPU step cost basis |
+| PPO epochs | 8 | **12** | more passes per batch |
+| batch size | 1024 | 1024 | stable minibatches |
+| warm-start games | 6000 | **12000** | stronger behaviour-cloning start |
+| BC epochs | 16 | **24** | fit the larger net |
+| learning rate | 3e-4 → 2e-5 | **4e-4 → 1e-5** | stronger early, finer late |
+| entropy | 0.035 → 0.003 | **0.04 → 0.002** | explore longer, then commit |
+| league fraction | 0.65 | **0.75** | more games against the league |
+| snapshot pool | 12 | **16** | deeper self-play history |
+| snapshot weight | 0.3 | **0.35** | favour recent strong selves |
+| eval games | 60 | **80** | steadier checkpoint selection |
+| head-to-head games | 40 | **60** | reliable champion comparison |
+| selection opponent | classic-rl | **lu_sol** | select the model that *beats lu_sol* |
+
+The selector is the important change: `_composite_score` already adds a bonus
+for beating the selection opponent above chance, so the saved "best" checkpoint
+is the run that actually out-plays `lu_sol`, not merely one that looks good
+against the bots.
 
 ---
 
-## 4. Advanced RL Techniques
+## 3. Training schedule (12-hour budget)
 
-### Curriculum Learning
-| Phase | Updates | Opponents | Focus |
-|-------|---------|-----------|-------|
-| 1 (BC) | 0-500 | — | Pure behavior cloning |
-| 2 (Warm) | 500-1,500 | combo, greedy | Basic RL vs weak |
-| 3 (League) | 1,500-4,000 | +rl_classic, lu_luna, snapshots | Diverse league |
-| 4 (Elite) | 4,000-6,500 | +lu_sol, best snapshots | Beat the best |
-| 5 (Polish) | 6,500-8,000 | Top-5 snapshots only | Final refinement |
+The driver `kaggle/train_lu_astra.py` trains in time-budgeted chunks and is
+fully resumable:
 
-### Reward Shaping (Intermediate Rewards)
-- **+0.1** per combo card played correctly
-- **+0.05** per point scored above baseline
-- **-0.05** for illegal action attempt (masked anyway)
-- **+0.2** for winning a round
-- **Terminal**: +1 win, 0 draw, -1 loss (standard)
+* `total-updates` 8000, `chunk-updates` 200;
+* default `time-budget-seconds` 39600 (11 h) so the session can save;
+* the learning-rate / entropy anneal is computed from the **global** step, so
+  it stays monotone across sessions;
+* `lu_astra-latest.json` is the resume point, `lu_astra.json` is the global
+  best, `lu_astra-metrics.json` accumulates all chunks and evaluations;
+* checkpoints land in `checkpoints/update-NNNN.json`.
 
-### Adaptive Hyperparameters
-```python
-lr_schedule: 5e-4 → 1e-5 (cosine with warmup 500 steps)
-entropy_schedule: 0.05 → 0.001 (exponential)
-gae_lambda: 0.97 (higher for credit assignment)
-clip_eps: 0.2 → 0.1 (anneal)
-kl_target: 0.02 (adaptive: if kl > 1.5× target, reduce lr)
-value_clip: 0.5 (prevent value explosion)
-huber_delta: 1.0
+If the full 8000 updates do not fit, the driver simply stops at the last
+complete chunk and resumes next session. Quality degrades gracefully: the best
+checkpoint so far is always kept.
+
+```bash
+python kaggle/train_lu_astra.py \
+    --work-dir /kaggle/working \
+    --total-updates 8000 \
+    --time-budget-seconds 39600
 ```
 
-### Self-Play ELO Tracking
-- Track ELO of each snapshot in pool
-- Weight league sampling by ELO (stronger opponents more often)
-- Auto-promote snapshots that beat current best 3× in a row
+Re-running the same command resumes automatically.
 
 ---
 
-## 5. Evaluation Protocol (Stronger Than lu_sol)
+## 4. Evaluation and success criteria
 
-| Metric | lu_sol | lu_astra |
-|--------|--------|----------|
-| eval_games | 60 | **100** |
-| head_to_head | 40 | **80** |
-| player_counts | 3-7 | **3-7** (equal weight) |
-| vs lu_sol | — | **required** |
-| vs lu_luna | — | **required** |
-| success_threshold | 60 pts | **62 pts** |
+Every `eval-every` updates the trainer runs NumPy `evaluate_rl` against greedy,
+combo, supervised and (through the selector) `lu_sol`, across 3–7 players. The
+composite score weights supervised/greedy/combo wins and adds a head-to-head
+edge bonus over chance.
 
-**Selection criteria** (lexicographic):
-1. Head-to-head win rate vs lu_sol > 52%
-2. Composite score (win_rate × 0.4 + mean_score/100 × 0.3 + success_rate × 0.3)
-3. 3-player win rate (most decisive format)
-4. Consistency (low variance across seeds)
-
----
-
-## 6. Implementation Checklist
-
-- [ ] Feature v3 implementation in `torch_env.py` and `env.py`
-- [ ] `AstraNetwork` class in `torch_rl.py` with cross-attention
-- [ ] `train_lu_astra_torch` function with curriculum
-- [ ] Kaggle driver `train_lu_astra.py` with resume/checkpoint
-- [ ] Notebook `lu_astra-training.ipynb` with 12-hour config
-- [ ] CLI command `train-lu-astra` with all hyperparameters
-- [ ] Tests for v3 features and network parity
-- [ ] Tournament integration (add astra to participants)
-
----
-
-## 7. Success Criteria
+Targets:
 
 | Metric | Target |
 |--------|--------|
-| Mean score vs greedy | **> 62** |
-| Win rate vs lu_sol | **> 55%** |
-| Tournament win rate (5 policies) | **> 45%** |
-| >60 pts rate | **> 40%** |
-| 3-player win rate | **> 50%** |
+| Mean score (evaluation games) | **≥ 60** |
+| Win rate vs `lu_sol` | **> chance** (composite bonus) |
+| Tournament win rate (6 policies, 500 games each) | **top 1–2** |
+| >60-point success rate | track and maximise |
 
 ---
 
-## 8. Risk Mitigation
+## 5. Deployment
+
+The exported `models/lu_astra.json` is a normal `RLNetwork`. To use it:
+
+```bash
+python -X utf8 -m eightfm tournament \
+    --participants luna,sol,astra,supervised,greedy,rl_classic \
+    --astra models/lu_astra.json \
+    --players 3,4,5,6,7 --games 100 \
+    --output tournament_astra_report.json
+```
+
+The desktop and Telegram apps auto-select `lu_luna` / `lu_sol`; `lu_astra` can
+be selected as an RL checkpoint wherever a model path is accepted.
+
+---
+
+## 6. Honest risks
 
 | Risk | Mitigation |
 |------|------------|
-| OOM on GPU | Gradient accumulation; batch_size=512, accum_steps=4 |
-| Overfitting | Stronger entropy, dropout 0.1 in residual blocks, larger snapshot pool |
-| Training instability | KL adaptive, value clipping, gradient norm clip 0.5 |
-| Feature parity bugs | Exhaustive v2→v3 parity tests; value-for-value vs NumPy |
-| 12hr timeout | Checkpoint every 20 updates; resume from best; early stopping if no improvement 500 updates |
+| Bigger net overfits or destabilises | behaviour-cloning warm start, entropy floor, `target_kl`, value clipping, Huber value loss |
+| 12 h not enough for 8000 updates | time-budgeted chunks + resume; best checkpoint always saved |
+| Selection noise | 80 eval games and 60 head-to-head games |
+| Memory | 1024/512/512 is small for a T4; no gradient checkpointing needed |
 
 ---
 
-*This design incorporates all learnings from lu_luna → lu_sol progression and pushes every dimension to its practical limit for the 12-hour Kaggle budget.*
+*Built on the same engine as `lu_sol`; the uplift is capacity, compute and
+champion-aware selection, not a new architecture.*

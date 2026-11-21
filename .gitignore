@@ -12,4 +12,6 @@ dist/
 
 # "Absolute" model training artifacts (normally produced on Kaggle, not committed)
 models/lu_sol-checkpoints/
+models/lu_astra-checkpoints/
 kaggle-run/
+outputfromkaggle/

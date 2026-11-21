@@ -1,14 +1,20 @@
-# Обучение модели `lu_sol` на Kaggle
+# Обучение моделей `lu_sol` и `lu_astra` на Kaggle
 
-Здесь лежит всё, чтобы обучить максимальную Classic-политику проекта
-(`lu_sol`) на внешних мощностях, а не на ноутбуке.
+Здесь лежит всё, чтобы обучить максимальные Classic-политики проекта
+(`lu_sol` и более сильную `lu_astra`) на внешних мощностях, а не на ноутбуке.
 
 ```
 kaggle/
-├── lu_sol-training.ipynb   # готовый ноутбук: клонирует репо и запускает обучение
-├── train_lu_sol.py         # возобновляемый драйвер обучения (можно запускать где угодно)
-└── README.md               # этот файл
+├── lu_sol-training.ipynb    # готовый ноутбук: клонирует репо и запускает обучение lu_sol
+├── train_lu_sol.py          # возобновляемый драйвер обучения lu_sol
+├── lu_astra-training.ipynb  # готовый ноутбук для lu_astra (12 ч, GPU)
+├── train_lu_astra.py        # возобновляемый драйвер обучения lu_astra
+└── README.md                # этот файл
 ```
+
+> `lu_astra` — тот же движок и тот же формат JSON, что у `lu_sol`, но с более
+> широкой сетью (1024/512/512), 12 эпохами PPO и отбором лучшего чекпоинта по
+> победе над `lu_sol`. См. раздел «Модель `lu_astra`» ниже.
 
 ## Почему Kaggle и как используется GPU
 
@@ -143,3 +149,69 @@ python -X utf8 -m eightfm play-game --model models/lu_sol.json
 
 Расписание `learning rate`/`энтропии` вычисляется от **глобального** шага,
 поэтому при возобновлении оно не «перезапускается», а плавно продолжается.
+
+## Модель `lu_astra`
+
+`lu_astra` — самая сильная развёртываемая политика проекта. Она использует
+тот же проверенный движок и тот же JSON-формат `RLNetwork`, что и `lu_sol`,
+поэтому чекпоинт сразу работает в приложении и турнире. Отличия:
+
+| Параметр | `lu_sol` | `lu_astra` |
+|---|---|---|
+| сеть (hidden1/hidden2/action) | 512/256/256 | **1024/512/512** |
+| всего обновлений | 6000 | **8000** |
+| PPO-эпох на батч | 8 | **12** |
+| warm start | 6000 игр / 16 эпох | **12000 игр / 24 эпохи** |
+| лига | 65% / пул 12 | **75% / пул 16** |
+| отбор лучшего | против `classic-rl` | **против `lu_sol`** |
+| learning rate | 3e-4 → 2e-5 | **4e-4 → 1e-5** |
+| entropy | 0.035 → 0.003 | **0.04 → 0.002** |
+
+### Быстрый путь (ноутбук)
+
+1. Kaggle → **Create → New Notebook** → **File → Import Notebook** →
+   `kaggle/lu_astra-training.ipynb`.
+2. **Settings**: **Internet: On**, **Accelerator: GPU T4 x2** (или P100).
+3. **Save Version → Save & Run All (Commit)**.
+4. Заберите из **Output** `lu_astra.json`, `lu_astra-latest.json`,
+   `lu_astra-metrics.json` и `tournament_astra_report.json`.
+
+### Ручной путь
+
+```bash
+git clone https://github.com/leonka123/8FM_AI
+cd 8FM_AI
+python kaggle/train_lu_astra.py \
+    --work-dir /kaggle/working \
+    --total-updates 8000 \
+    --chunk-updates 200 \
+    --time-budget-seconds 39600
+```
+
+Драйвер сам подхватит `lu_astra-latest.json` и `driver_state.json` при
+повторном запуске. `--time-budget-seconds 39600` (11 ч) оставляет запас, чтобы
+сессия успела сохранить чекпоинты до лимита Kaggle (~12 ч).
+
+Полезные флаги: `--hidden1/--hidden2/--action-hidden` (ширина сети),
+`--ppo-epochs`, `--league-fraction`, `--snapshot-pool-size`,
+`--selection-opponent` (по умолчанию `models/lu_sol.json`, `none` — отключить),
+`--eval-every`, `--eval-games`, `--device`, `--seed`, `--reset`.
+
+Локальный smoke-тест (несколько секунд на CPU):
+
+```bash
+python -X utf8 -m eightfm train-lu-astra --updates 2 --games-per-update 8 \
+    --players 3 --device cpu --hidden1 64 --hidden2 32 --action-hidden 32 \
+    --warm-start-games 4 --bc-epochs 1 --eval-every 0 --selection-opponent none \
+    --checkpoint-every 0 --plot none
+```
+
+### Турнир после обучения
+
+```bash
+python -X utf8 -m eightfm tournament \
+    --participants luna,sol,astra,supervised,greedy,rl_classic \
+    --astra models/lu_astra.json \
+    --players 3,4,5,6,7 --games 100 \
+    --output tournament_astra_report.json
+```
