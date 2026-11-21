@@ -207,9 +207,16 @@ def main(argv: list[str] | None = None) -> int:
     state_path = work / "driver_state.json"
 
     if args.reset:
-        for stale in (state_path, latest_path, chunk_best_path):
+        for stale in (state_path, latest_path, chunk_best_path, chunk_metrics_path,
+                      combined_metrics_path, best_path):
             stale.unlink(missing_ok=True)
         print("[driver] --reset: starting a fresh run")
+
+    selection_opponent = args.selection_opponent
+    if not selection_opponent or selection_opponent.lower() == "none":
+        selection_opponent = None
+    elif not Path(selection_opponent).is_absolute() and (repo / selection_opponent).exists():
+        selection_opponent = str(repo / selection_opponent)
 
     state = _load_state(state_path)
     global_step = int(state.get("global_step", 0))
@@ -283,7 +290,7 @@ def main(argv: list[str] | None = None) -> int:
             league_fraction=args.league_fraction,
             snapshot_every=args.snapshot_every,
             snapshot_pool_size=args.snapshot_pool_size,
-            selection_opponent_path=args.selection_opponent,
+            selection_opponent_path=selection_opponent,
             head_to_head_games=args.head_to_head_games,
             hidden1=args.hidden1,
             hidden2=args.hidden2,
