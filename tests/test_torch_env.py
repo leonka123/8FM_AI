@@ -109,7 +109,7 @@ class BatchedFeatureParityTests(unittest.TestCase):
 
     def test_features_match_on_random_positions(self):
         for player_count in (3, 4, 5, 6, 7):
-            for version in (1, 2):
+            for version in (1, 2, 3, 4):
                 for seed in (11, 23):
                     env = ClassicEnv(player_count, seed=seed)
                     batch = BatchedClassicEnv(player_count, 1, seed=seed)

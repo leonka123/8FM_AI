@@ -46,6 +46,7 @@ from .env import (
     ClassicEnv,
     LATEST_FEATURE_VERSION,
     Observation,
+    SUPPORTED_FEATURE_VERSIONS,
     action_feature_size,
     action_features,
     state_feature_size,
@@ -124,7 +125,7 @@ class RLNetwork:
         if data.get("format") != RL_FORMAT:
             raise ValueError("Unsupported RL model format")
         version = int(data.get("features_version", 1))
-        if version not in (1, 2):
+        if version not in SUPPORTED_FEATURE_VERSIONS:
             raise ValueError(f"Unsupported RL feature version: {version}")
         if list(data.get("card_ids", [])) != list(CARD_IDS):
             raise ValueError("RL model card set does not match this build")

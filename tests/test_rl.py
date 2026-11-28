@@ -26,6 +26,7 @@ from eightfm.rl import (
 )
 from eightfm.rl_train import (
     _composite_score,
+    _goal_composite_score,
     _value_loss_and_gradient,
     collect_episode,
     head_to_head_report,
@@ -70,7 +71,7 @@ class NetworkTests(unittest.TestCase):
         self.assertEqual(loaded.metadata["note"], "roundtrip")
 
     def test_feature_version_layouts_roundtrip(self):
-        for version in (1, 2):
+        for version in (1, 2, 3, 4):
             net = create_network(seed=version, feature_version=version)
             self.assertEqual(net.feature_version, version)
             self.assertEqual(
@@ -83,9 +84,13 @@ class NetworkTests(unittest.TestCase):
             self.assertEqual(loaded.feature_version, version)
             self.assertEqual(loaded.W1.shape, net.W1.shape)
             np.testing.assert_allclose(net.W1, loaded.W1)
-        # The richer layout must expose strictly more inputs than v1.
+        # Every richer layout must expose strictly more inputs.
         self.assertGreater(state_feature_size(2), state_feature_size(1))
         self.assertGreater(action_feature_size(2), action_feature_size(1))
+        self.assertGreater(state_feature_size(3), state_feature_size(2))
+        self.assertGreater(action_feature_size(3), action_feature_size(2))
+        self.assertGreater(state_feature_size(4), state_feature_size(3))
+        self.assertGreater(action_feature_size(4), action_feature_size(3))
 
     def test_lu_sol_preset_is_the_maximal_recipe(self):
         import inspect
@@ -115,6 +120,51 @@ class NetworkTests(unittest.TestCase):
         clone.W1[0, 0] += 1.0
         self.assertNotEqual(net.W1[0, 0], clone.W1[0, 0])
         np.testing.assert_allclose(net.W2, clone.W2)
+
+
+class SelectionTests(unittest.TestCase):
+    def _report(self, *, mean_score, success, win, combo, h2h, chance):
+        return {
+            "summary": {
+                "mean_score": mean_score,
+                "success_rate": success,
+                "win_rate": win,
+                "combo_win_rate": combo,
+                "head_to_head_win_rate": h2h,
+                "head_to_head_chance": chance,
+            }
+        }
+
+    def test_beating_the_champion_is_a_hard_gate(self):
+        # A high-scoring checkpoint that still loses to lu_sol must rank below
+        # a much lower-scoring checkpoint that beats it.
+        loser = self._report(
+            mean_score=70.0, success=0.8, win=0.8, combo=0.8,
+            h2h=0.20, chance=0.25,
+        )
+        winner = self._report(
+            mean_score=45.0, success=0.2, win=0.4, combo=0.4,
+            h2h=0.30, chance=0.25,
+        )
+        self.assertGreater(_goal_composite_score(winner), _goal_composite_score(loser))
+
+    def test_within_the_gate_bigger_edge_wins(self):
+        small = self._report(
+            mean_score=60.0, success=0.5, win=0.5, combo=0.5,
+            h2h=0.26, chance=0.25,
+        )
+        large = self._report(
+            mean_score=60.0, success=0.5, win=0.5, combo=0.5,
+            h2h=0.40, chance=0.25,
+        )
+        self.assertGreater(_goal_composite_score(large), _goal_composite_score(small))
+
+    def test_no_head_to_head_falls_back_to_goal_score(self):
+        report = self._report(
+            mean_score=60.0, success=1.0, win=1.0, combo=1.0,
+            h2h=None, chance=0.25,
+        )
+        self.assertAlmostEqual(_goal_composite_score(report), 0.95, places=6)
 
 
 class EpisodeTests(unittest.TestCase):

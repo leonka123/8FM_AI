@@ -12,10 +12,12 @@ try:
 
     from eightfm.torch_env import ACTION_SIZE, BatchedClassicEnv
     from eightfm.torch_rl import (
+        BatchedNetPolicy,
         TorchActorCritic,
         behaviour_clone_torch,
         collect_bc_dataset_torch,
         collect_torch_rollout,
+        head_to_head_report_torch,
         to_rl_network,
         torch_rl_update,
         train_lu_astra,
@@ -112,7 +114,7 @@ class TorchRolloutTests(unittest.TestCase):
 
     def test_behaviour_cloning_runs(self):
         dataset = collect_bc_dataset_torch(
-            games=6, player_counts=(3, 4), seed=3, batch_size=3
+            games=6, player_counts=(3, 4), seed=3, batch_size=3, feature_version=2
         )
         self.assertGreater(dataset.size, 0)
         model = TorchActorCritic(
@@ -128,6 +130,36 @@ class TorchRolloutTests(unittest.TestCase):
 
 
 @unittest.skipIf(torch is None, "torch is not installed")
+class TorchChampionTests(unittest.TestCase):
+    def test_v2_opponent_can_play_against_a_v4_observation(self):
+        opponent_net = create_network(seed=1, feature_version=2)
+        opponent = TorchActorCritic.from_rl_network(opponent_net, seed=2)
+        policy = BatchedNetPolicy(opponent)
+        env = BatchedClassicEnv(5, 2, seed=3)
+        observation = env.observation(4)
+        actions = policy.act(observation, torch.Generator().manual_seed(0))
+        self.assertEqual(actions.shape, (2, 5))
+        self.assertTrue(
+            bool(observation.legal.gather(-1, actions.unsqueeze(-1)).all())
+        )
+
+    def test_batched_head_to_head_is_fair_and_complete(self):
+        candidate_net = create_network(
+            seed=3, feature_version=4, hidden1=64, hidden2=32, action_hidden=32
+        )
+        opponent_net = create_network(
+            seed=4, feature_version=2, hidden1=64, hidden2=32, action_hidden=32
+        )
+        candidate = TorchActorCritic.from_rl_network(candidate_net, seed=5)
+        report = head_to_head_report_torch(
+            candidate, opponent_net, player_counts=(3, 4), games=4
+        )
+        self.assertAlmostEqual(report["chance"], (1 / 3 + 1 / 4) / 2)
+        self.assertGreaterEqual(report["win_rate"], 0.0)
+        self.assertLessEqual(report["win_rate"], 1.0)
+        self.assertGreaterEqual(report["mean_score"], 0.0)
+
+
 class TorchTrainingSmokeTests(unittest.TestCase):
     def test_tiny_training_writes_loadable_model(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -165,10 +197,19 @@ class TorchTrainingSmokeTests(unittest.TestCase):
         import inspect
 
         signature = inspect.signature(train_lu_astra)
-        self.assertEqual(signature.parameters["hidden1"].default, 1024)
-        self.assertEqual(signature.parameters["hidden2"].default, 512)
-        self.assertEqual(signature.parameters["action_hidden"].default, 512)
-        self.assertEqual(signature.parameters["ppo_epochs"].default, 12)
+        self.assertEqual(signature.parameters["hidden1"].default, 2048)
+        self.assertEqual(signature.parameters["hidden2"].default, 1024)
+        self.assertEqual(signature.parameters["action_hidden"].default, 1024)
+        self.assertEqual(signature.parameters["feature_version"].default, 4)
+        self.assertEqual(signature.parameters["games_per_update"].default, 1024)
+        self.assertEqual(signature.parameters["ppo_epochs"].default, 6)
+        self.assertEqual(signature.parameters["champion_league_weight"].default, 0.35)
+        self.assertEqual(signature.parameters["head_to_head_games"].default, 100)
+        self.assertTrue(signature.parameters["goal_selection"].default)
+        self.assertGreater(
+            signature.parameters["score_weight"].default,
+            signature.parameters["placement_weight"].default,
+        )
 
     def test_tiny_astra_training_writes_loadable_model(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -198,8 +239,8 @@ class TorchTrainingSmokeTests(unittest.TestCase):
             self.assertTrue((root / "lu_astra.json").exists())
             self.assertTrue((root / "lu_astra-latest.json").exists())
             loaded = load_rl(root / "lu_astra.json")
-            self.assertEqual(loaded.feature_version, 2)
-            self.assertEqual(loaded.W1.shape, (state_feature_size(2), 64))
-            self.assertEqual(loaded.Wa.shape, (action_feature_size(2), 32))
+            self.assertEqual(loaded.feature_version, 4)
+            self.assertEqual(loaded.W1.shape, (state_feature_size(4), 64))
+            self.assertEqual(loaded.Wa.shape, (action_feature_size(4), 32))
             self.assertEqual(metrics["backend"], "torch")
             self.assertEqual(len(metrics["updates"]), 1)

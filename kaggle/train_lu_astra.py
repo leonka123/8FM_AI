@@ -2,9 +2,11 @@
 
 ``lu_astra`` is the maximal preset of the proven torch engine
 (:func:`eightfm.torch_rl.train_lu_astra`): the same ``RLNetwork`` architecture
-that produced ``lu_sol``, only wider (1024/512/512) and trained for a long,
-smoothly annealed run with a deeper league and a head-to-head selector against
-``lu_sol`` itself.
+that produced ``lu_sol``, only wider (2048/1024/1024), with the v4 feature
+layout (250 state / 42 action, including personal hand history) and trained
+for a long, smoothly annealed run with a deeper league, ``lu_sol`` as a live
+league opponent, and a head-to-head selector that makes beating ``lu_sol`` a
+hard requirement for the saved checkpoint.
 
 Why a driver instead of one call
 --------------------------------
@@ -22,7 +24,7 @@ Typical Kaggle use (GPU accelerator, Internet On)::
     git clone https://github.com/leonka123/8FM_AI repo
     cd repo
     python kaggle/train_lu_astra.py --work-dir /kaggle/working \
-        --total-updates 8000 --time-budget-seconds 39600
+        --total-updates 15000 --time-budget-seconds 39600
 
 Re-running the same command in the next session resumes automatically.
 
@@ -123,30 +125,52 @@ def build_parser() -> argparse.ArgumentParser:
         "--work-dir", default="/kaggle/working",
         help="Where checkpoints live; keep this on persistent storage between runs",
     )
-    parser.add_argument("--total-updates", type=int, default=8000)
+    parser.add_argument("--total-updates", type=int, default=15000)
     parser.add_argument("--chunk-updates", type=int, default=200)
-    parser.add_argument("--games-per-update", type=int, default=512)
-    parser.add_argument("--batch-size", type=int, default=1024)
-    parser.add_argument("--ppo-epochs", type=int, default=12)
-    parser.add_argument("--warm-start-games", type=int, default=12000)
-    parser.add_argument("--bc-epochs", type=int, default=24)
+    parser.add_argument("--games-per-update", type=int, default=1024)
+    parser.add_argument("--batch-size", type=int, default=4096)
+    parser.add_argument("--ppo-epochs", type=int, default=6)
+    parser.add_argument("--warm-start-games", type=int, default=20000)
+    parser.add_argument("--bc-epochs", type=int, default=20)
 
-    # Network width — the architectural uplift over lu_sol.
-    parser.add_argument("--hidden1", type=int, default=1024)
-    parser.add_argument("--hidden2", type=int, default=512)
-    parser.add_argument("--action-hidden", type=int, default=512)
+    # Network width -- the architectural uplift over lu_sol.
+    parser.add_argument("--hidden1", type=int, default=2048)
+    parser.add_argument("--hidden2", type=int, default=1024)
+    parser.add_argument("--action-hidden", type=int, default=1024)
+    parser.add_argument(
+        "--feature-version", type=int, default=4, choices=(1, 2, 3, 4),
+        help="State/action feature layout (4 = v4 with hand history, the lu_astra default)",
+    )
+
+    # Score-oriented reward and selection (the 60+ point objective).
+    parser.add_argument("--win-weight", type=float, default=1.0)
+    parser.add_argument("--placement-weight", type=float, default=0.3)
+    parser.add_argument("--score-weight", type=float, default=1.2)
+    parser.add_argument("--success-weight", type=float, default=1.5)
+    parser.add_argument("--margin-weight", type=float, default=0.4)
+    parser.add_argument(
+        "--goal-selection", action=argparse.BooleanOptionalAction, default=True,
+        help="Select checkpoints by mean score / >60 success (default: on)",
+    )
 
     # League / evaluation.
-    parser.add_argument("--league-fraction", type=float, default=0.75)
-    parser.add_argument("--snapshot-every", type=int, default=20)
-    parser.add_argument("--snapshot-pool-size", type=int, default=16)
+    parser.add_argument("--league-fraction", type=float, default=0.85)
+    parser.add_argument("--snapshot-every", type=int, default=15)
+    parser.add_argument("--snapshot-pool-size", type=int, default=24)
+    parser.add_argument(
+        "--champion-league-weight", type=float, default=0.35,
+        help=(
+            "Share of league seats played against --selection-opponent "
+            "(lu_sol); 0 disables live training against the champion"
+        ),
+    )
     parser.add_argument(
         "--selection-opponent", default="models/lu_sol.json",
         help="Champion checkpoint the best model must beat ('none' to disable)",
     )
-    parser.add_argument("--head-to-head-games", type=int, default=60)
-    parser.add_argument("--eval-every", type=int, default=50)
-    parser.add_argument("--eval-games", type=int, default=80)
+    parser.add_argument("--head-to-head-games", type=int, default=100)
+    parser.add_argument("--eval-every", type=int, default=100)
+    parser.add_argument("--eval-games", type=int, default=50)
 
     parser.add_argument(
         "--device", default="auto",
@@ -212,6 +236,25 @@ def main(argv: list[str] | None = None) -> int:
             stale.unlink(missing_ok=True)
         print("[driver] --reset: starting a fresh run")
 
+    # Never silently resume a checkpoint from a different feature layout: a
+    # stale v3 ``lu_astra-latest.json`` must not turn a requested v4 run back
+    # into v3.  Fail loudly and tell the user how to start clean.
+    if latest_path.exists():
+        try:
+            existing_version = int(
+                json.loads(latest_path.read_text(encoding="utf-8")).get(
+                    "features_version", -1
+                )
+            )
+        except (OSError, ValueError):
+            existing_version = -1
+        if existing_version not in (-1, args.feature_version):
+            raise SystemExit(
+                f"[driver] {latest_path.name} uses features v{existing_version}, but "
+                f"--feature-version {args.feature_version} was requested. "
+                "Re-run with --reset (or a new --work-dir) to start a clean run."
+            )
+
     selection_opponent = args.selection_opponent
     if not selection_opponent or selection_opponent.lower() == "none":
         selection_opponent = None
@@ -221,6 +264,11 @@ def main(argv: list[str] | None = None) -> int:
     state = _load_state(state_path)
     global_step = int(state.get("global_step", 0))
     best_score = float(state.get("best_score", float("-inf")))
+    # A recorded best score is only meaningful if the checkpoint itself is
+    # still on disk (the Output folder can be partially cleaned between
+    # sessions).  Otherwise a high stale score would block every new best.
+    if not best_path.exists():
+        best_score = float("-inf")
 
     print("=" * 68)
     print(" lu_astra — resumable training driver")
@@ -230,11 +278,12 @@ def main(argv: list[str] | None = None) -> int:
     print(
         f" best score   : {best_score:.4f}"
         if best_score > float("-inf")
-        else " best score   : —"
+        else " best score   : -"
     )
     print(f" device       : {device}")
     print(f" net          : {args.hidden1}/{args.hidden2}/{args.action_hidden}")
     print(f" games/update : {args.games_per_update}")
+    print(f" champion liga: {args.champion_league_weight} vs {selection_opponent or 'none'}")
     print(f" time budget  : {args.time_budget_seconds or '∞'} s")
     print("=" * 68)
 
@@ -253,7 +302,7 @@ def main(argv: list[str] | None = None) -> int:
         )
         if remaining_budget < args.min_chunk_seconds:
             print(
-                f"[driver] {remaining_budget:.0f}s left — below the minimum chunk "
+                f"[driver] {remaining_budget:.0f}s left - below the minimum chunk "
                 "time, stopping to let the session save."
             )
             break
@@ -270,8 +319,8 @@ def main(argv: list[str] | None = None) -> int:
 
         print(
             f"\n[driver] chunk {state.get('chunks', 0) + 1}: "
-            f"steps {global_step}→{global_step + chunk} "
-            f"(lr {lr_start:.2e}→{lr_end:.2e}, ent {ent_start:.3f}→{ent_end:.3f}, "
+            f"steps {global_step}->{global_step + chunk} "
+            f"(lr {lr_start:.2e}->{lr_end:.2e}, ent {ent_start:.3f}->{ent_end:.3f}, "
             f"warm_start={warm_start}, resume={'yes' if resume else 'no'})"
         )
 
@@ -290,11 +339,19 @@ def main(argv: list[str] | None = None) -> int:
             league_fraction=args.league_fraction,
             snapshot_every=args.snapshot_every,
             snapshot_pool_size=args.snapshot_pool_size,
+            champion_league_weight=args.champion_league_weight,
             selection_opponent_path=selection_opponent,
             head_to_head_games=args.head_to_head_games,
             hidden1=args.hidden1,
             hidden2=args.hidden2,
             action_hidden=args.action_hidden,
+            feature_version=args.feature_version,
+            win_weight=args.win_weight,
+            placement_weight=args.placement_weight,
+            score_weight=args.score_weight,
+            success_weight=args.success_weight,
+            margin_weight=args.margin_weight,
+            goal_selection=args.goal_selection,
             device=device,
             eval_every=args.eval_every,
             eval_games=args.eval_games,

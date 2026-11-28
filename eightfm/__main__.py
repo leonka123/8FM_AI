@@ -237,32 +237,46 @@ def main() -> int:
         "train-lu-astra",
         help="Train lu_astra, the maximal policy (wider net + long torch PPO run)",
     )
-    lu_astra_parser.add_argument("--updates", type=int, default=8000)
-    lu_astra_parser.add_argument("--games-per-update", type=int, default=512)
-    lu_astra_parser.add_argument("--batch-size", type=int, default=1024)
-    lu_astra_parser.add_argument("--ppo-epochs", type=int, default=12)
-    lu_astra_parser.add_argument("--learning-rate", type=float, default=4e-4)
-    lu_astra_parser.add_argument("--learning-rate-final", type=float, default=1e-5)
-    lu_astra_parser.add_argument("--entropy-coef", type=float, default=0.04)
-    lu_astra_parser.add_argument("--entropy-coef-final", type=float, default=0.002)
+    lu_astra_parser.add_argument("--updates", type=int, default=15000)
+    lu_astra_parser.add_argument("--games-per-update", type=int, default=1024)
+    lu_astra_parser.add_argument("--batch-size", type=int, default=4096)
+    lu_astra_parser.add_argument("--ppo-epochs", type=int, default=6)
+    lu_astra_parser.add_argument("--learning-rate", type=float, default=3e-4)
+    lu_astra_parser.add_argument("--learning-rate-final", type=float, default=5e-6)
+    lu_astra_parser.add_argument("--entropy-coef", type=float, default=0.03)
+    lu_astra_parser.add_argument("--entropy-coef-final", type=float, default=0.001)
     lu_astra_parser.add_argument("--clip-ratio", type=float, default=0.2)
     lu_astra_parser.add_argument("--gae-lambda", type=float, default=0.95)
     lu_astra_parser.add_argument("--gamma", type=float, default=0.99)
-    lu_astra_parser.add_argument("--target-kl", type=float, default=0.03)
+    lu_astra_parser.add_argument("--target-kl", type=float, default=0.02)
     lu_astra_parser.add_argument("--value-clip", type=float, default=0.2)
     lu_astra_parser.add_argument("--huber-delta", type=float, default=1.0)
-    lu_astra_parser.add_argument("--league-fraction", type=float, default=0.75)
-    lu_astra_parser.add_argument("--snapshot-every", type=int, default=20)
-    lu_astra_parser.add_argument("--snapshot-pool-size", type=int, default=16)
-    lu_astra_parser.add_argument("--warm-start-games", type=int, default=12000)
-    lu_astra_parser.add_argument("--bc-epochs", type=int, default=24)
-    lu_astra_parser.add_argument("--hidden1", type=int, default=1024)
-    lu_astra_parser.add_argument("--hidden2", type=int, default=512)
-    lu_astra_parser.add_argument("--action-hidden", type=int, default=512)
-    lu_astra_parser.add_argument("--eval-every", type=int, default=50)
-    lu_astra_parser.add_argument("--eval-games", type=int, default=80)
+    lu_astra_parser.add_argument("--win-weight", type=float, default=1.0)
+    lu_astra_parser.add_argument("--placement-weight", type=float, default=0.3)
+    lu_astra_parser.add_argument("--score-weight", type=float, default=1.2)
+    lu_astra_parser.add_argument("--success-weight", type=float, default=1.5)
+    lu_astra_parser.add_argument("--margin-weight", type=float, default=0.4)
+    lu_astra_parser.add_argument("--league-fraction", type=float, default=0.85)
+    lu_astra_parser.add_argument("--snapshot-every", type=int, default=15)
+    lu_astra_parser.add_argument("--snapshot-pool-size", type=int, default=24)
+    lu_astra_parser.add_argument("--champion-league-weight", type=float, default=0.35)
+    lu_astra_parser.add_argument("--warm-start-games", type=int, default=20000)
+    lu_astra_parser.add_argument("--bc-epochs", type=int, default=20)
+    lu_astra_parser.add_argument("--hidden1", type=int, default=2048)
+    lu_astra_parser.add_argument("--hidden2", type=int, default=1024)
+    lu_astra_parser.add_argument("--action-hidden", type=int, default=1024)
+    lu_astra_parser.add_argument("--eval-every", type=int, default=100)
+    lu_astra_parser.add_argument("--eval-games", type=int, default=50)
     lu_astra_parser.add_argument("--eval-seed-base", type=int, default=50000)
-    lu_astra_parser.add_argument("--head-to-head-games", type=int, default=60)
+    lu_astra_parser.add_argument("--head-to-head-games", type=int, default=100)
+    lu_astra_parser.add_argument(
+        "--feature-version", type=int, default=4, choices=(1, 2, 3, 4),
+        help="State/action feature layout (4 = v4 with hand history, the lu_astra default)",
+    )
+    lu_astra_parser.add_argument(
+        "--goal-selection", action=argparse.BooleanOptionalAction, default=True,
+        help="Select checkpoints by mean score / >60 success (default: on)",
+    )
     lu_astra_parser.add_argument(
         "--selection-opponent",
         default="models/lu_sol.json",
@@ -667,9 +681,16 @@ def main() -> int:
                 value_clip=args.value_clip,
                 huber_delta=args.huber_delta,
                 target_kl=args.target_kl,
+                win_weight=args.win_weight,
+                placement_weight=args.placement_weight,
+                score_weight=args.score_weight,
+                success_weight=args.success_weight,
+                margin_weight=args.margin_weight,
+                goal_selection=args.goal_selection,
                 league_fraction=args.league_fraction,
                 snapshot_every=args.snapshot_every,
                 snapshot_pool_size=args.snapshot_pool_size,
+                champion_league_weight=args.champion_league_weight,
                 selection_opponent_path=selection_opponent_path,
                 head_to_head_games=args.head_to_head_games,
                 checkpoint_every=args.checkpoint_every,
@@ -677,6 +698,7 @@ def main() -> int:
                 hidden1=args.hidden1,
                 hidden2=args.hidden2,
                 action_hidden=args.action_hidden,
+                feature_version=args.feature_version,
                 device=resolve_device(args.device),
                 eval_every=args.eval_every,
                 eval_games=args.eval_games,

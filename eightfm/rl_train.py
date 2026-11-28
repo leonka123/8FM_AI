@@ -663,6 +663,10 @@ def evaluate_rl(
     greedy_win: list[float] = []
     supervised_win: list[float] = []
     combo_win: list[float] = []
+    all_mean_scores: list[float] = []
+    all_success_rates: list[float] = []
+    all_win_rates: list[float] = []
+    all_margins: list[float] = []
     for player_count in player_counts:
         greedy_metrics = evaluate_controlled_seat(
             player_count,
@@ -693,6 +697,11 @@ def evaluate_rl(
             )
             entry["supervised"] = supervised_metrics.to_dict()
             supervised_win.append(supervised_metrics.win_rate)
+        for metrics in entry.values():
+            all_mean_scores.append(float(metrics["mean_score"]))
+            all_success_rates.append(float(metrics["success_rate"]))
+            all_win_rates.append(float(metrics["win_rate"]))
+            all_margins.append(float(metrics["mean_margin"]))
         report["players"][str(player_count)] = entry
     if selection_opponent is not None:
         head_to_head = head_to_head_report(
@@ -705,12 +714,75 @@ def evaluate_rl(
         report["head_to_head"] = head_to_head
         report["summary"]["head_to_head_win_rate"] = head_to_head["win_rate"]
         report["summary"]["head_to_head_chance"] = head_to_head["chance"]
+        report["summary"]["head_to_head_edge"] = (
+            (head_to_head["win_rate"] - head_to_head["chance"])
+            / head_to_head["chance"]
+            if head_to_head["chance"] > 0.0
+            else 0.0
+        )
+        report["summary"]["head_to_head_gate_passed"] = bool(
+            head_to_head["win_rate"] > head_to_head["chance"]
+        )
     report["summary"]["greedy_win_rate"] = float(np.mean(greedy_win)) if greedy_win else 0.0
     if combo_win:
         report["summary"]["combo_win_rate"] = float(np.mean(combo_win))
     if supervised_win:
         report["summary"]["supervised_win_rate"] = float(np.mean(supervised_win))
+    # Score-oriented summary used by the 60-point selection metric.
+    report["summary"]["mean_score"] = (
+        float(np.mean(all_mean_scores)) if all_mean_scores else 0.0
+    )
+    report["summary"]["success_rate"] = (
+        float(np.mean(all_success_rates)) if all_success_rates else 0.0
+    )
+    report["summary"]["win_rate"] = (
+        float(np.mean(all_win_rates)) if all_win_rates else 0.0
+    )
+    report["summary"]["mean_margin"] = (
+        float(np.mean(all_margins)) if all_margins else 0.0
+    )
     return report
+
+
+def _goal_composite_score(report: dict[str, Any]) -> float:
+    """Selection metric aligned with the ``60+ points`` objective.
+
+    The legacy :func:`_composite_score` only looks at win rates.  A policy can
+    win a low-scoring table and still be far from the target, so this metric
+    makes the candidate's own mean score the dominant term, adds the fraction
+    of games above 60, and keeps win/combo as tie-breakers.
+
+    When a head-to-head report against the reigning champion is present,
+    **beating that champion is a hard gate**: every checkpoint that beats it
+    outranks every checkpoint that does not, regardless of raw score.  Within
+    the gate the 60-point base score is the main criterion and the size of the
+    edge breaks ties, so a high-scoring checkpoint that still loses to
+    ``lu_sol`` can never be selected over one that beats it.  This is what
+    guarantees ``lu_astra`` does not regress below the champion.
+    """
+    summary = report.get("summary", {})
+    mean_score = float(summary.get("mean_score", 0.0))
+    success = float(summary.get("success_rate", 0.0))
+    win = float(summary.get("win_rate", 0.0))
+    combo = float(summary.get("combo_win_rate", 0.0))
+    base = (
+        0.50 * min(mean_score / 60.0, 1.5)
+        + 0.20 * success
+        + 0.15 * win
+        + 0.10 * combo
+    )
+    head_to_head = summary.get("head_to_head_win_rate")
+    if head_to_head is None:
+        return base
+    chance = float(summary.get("head_to_head_chance", 0.0))
+    if chance <= 0.0:
+        return base
+    head_to_head = float(head_to_head)
+    edge = max(-1.0, min(1.0, (head_to_head - chance) / chance))
+    gate = 1.0 if head_to_head > chance else 0.0
+    # Hard gate first, then the 60-point objective, with the size of the
+    # head-to-head edge as a tie-breaker that rewards a clearer margin.
+    return 100.0 * gate + base + 0.5 * edge
 
 
 def _composite_score(report: dict[str, Any]) -> float:
@@ -1459,7 +1531,7 @@ def train_lu_sol(
     hidden1: int = 512,
     hidden2: int = 256,
     action_hidden: int = 256,
-    feature_version: int = LATEST_FEATURE_VERSION,
+    feature_version: int = 2,
     workers: int = 1,
     eval_every: int = 50,
     eval_games: int = 60,

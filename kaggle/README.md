@@ -12,9 +12,7 @@ kaggle/
 └── README.md                # этот файл
 ```
 
-> `lu_astra` — тот же движок и тот же формат JSON, что у `lu_sol`, но с более
-> широкой сетью (1024/512/512), 12 эпохами PPO и отбором лучшего чекпоинта по
-> победе над `lu_sol`. См. раздел «Модель `lu_astra`» ниже.
+> `lu_astra` — тот же движок и тот же формат JSON, что у `lu_sol`, но с **новым раскладом признаков v4** (250 / 42 вместо 158 / 32, включая историю прошлых рук), более широкой сетью (2048/1024/1024), счёт-ориентированной наградой и отбором чекпоинтов под цель 60+ очков. См. раздел «Модель `lu_astra`» ниже.
 
 ## Почему Kaggle и как используется GPU
 
@@ -154,18 +152,26 @@ python -X utf8 -m eightfm play-game --model models/lu_sol.json
 
 `lu_astra` — самая сильная развёртываемая политика проекта. Она использует
 тот же проверенный движок и тот же JSON-формат `RLNetwork`, что и `lu_sol`,
-поэтому чекпоинт сразу работает в приложении и турнире. Отличия:
+поэтому чекпоинт сразу работает в приложении и турнире. Главное отличие —
+**расклад признаков v4** (с историей прошлых рук) и подбор гиперпараметров под
+цель «60+ очков».
 
-| Параметр | `lu_sol` | `lu_astra` |
+| Параметр | `lu_sol` (v2) | `lu_astra` (v4) |
 |---|---|---|
-| сеть (hidden1/hidden2/action) | 512/256/256 | **1024/512/512** |
-| всего обновлений | 6000 | **8000** |
-| PPO-эпох на батч | 8 | **12** |
-| warm start | 6000 игр / 16 эпох | **12000 игр / 24 эпохи** |
-| лига | 65% / пул 12 | **75% / пул 16** |
-| отбор лучшего | против `classic-rl` | **против `lu_sol`** |
-| learning rate | 3e-4 → 2e-5 | **4e-4 → 1e-5** |
-| entropy | 0.035 → 0.003 | **0.04 → 0.002** |
+| **расклад признаков** | v2: 158 / 32 | **v4: 250 / 42** (включая историю рук) |
+| сеть (hidden1/hidden2/action) | 512/256/256 | **2048/1024/1024** |
+| всего обновлений | 6000 | **15000** |
+| PPO-эпох на батч | 8 | **6** (меньше эпох, больше игр) |
+| games per update | 512 | **1024** |
+| batch size | 1024 | **4096** |
+| warm start | 6000 игр / 16 эпох | **20000 игр / 20 эпох** |
+| лига | 65% / пул 12 | **85% / пул 24** |
+| живой оппонент `lu_sol` | — | **вес 0.35** (учится обыгрывать чемпиона напрямую) |
+| терминальная награда | win 1.5 / score 0.4 / success 0.4 | **win 1.0 / score 1.2 / success 1.5** |
+| метрика отбора | `_composite_score` (win-rates) | **`_goal_composite_score`: жёсткий гейт «обыграй `lu_sol`», затем mean_score + success** |
+| отбор лучшего | против `classic-rl` | **против `lu_sol`** (100 игр на размер стола) |
+| learning rate | 3e-4 → 2e-5 | **3e-4 → 5e-6** |
+| entropy | 0.035 → 0.003 | **0.03 → 0.001** |
 
 ### Быстрый путь (ноутбук)
 
@@ -176,6 +182,12 @@ python -X utf8 -m eightfm play-game --model models/lu_sol.json
 4. Заберите из **Output** `lu_astra.json`, `lu_astra-latest.json`,
    `lu_astra-metrics.json` и `tournament_astra_report.json`.
 
+> **Продолжение между сессиями.** `/kaggle/working` не сохраняется в новой версии
+> ноутбука. Скачайте Output прошлого прогона, загрузите его как Kaggle Dataset
+> (например, `lu-astra-checkpoint`) и подключите к новой версии. Ячейка `resume`
+> скопирует `lu_astra-latest.json` и `driver_state.json` в `/kaggle/working`, и
+> драйвер продолжит с того же глобального шага с монотонным LR/энтропией.
+
 ### Ручной путь
 
 ```bash
@@ -183,7 +195,7 @@ git clone https://github.com/leonka123/8FM_AI
 cd 8FM_AI
 python kaggle/train_lu_astra.py \
     --work-dir /kaggle/working \
-    --total-updates 8000 \
+    --total-updates 15000 \
     --chunk-updates 200 \
     --time-budget-seconds 39600
 ```
@@ -194,8 +206,12 @@ python kaggle/train_lu_astra.py \
 
 Полезные флаги: `--hidden1/--hidden2/--action-hidden` (ширина сети),
 `--ppo-epochs`, `--league-fraction`, `--snapshot-pool-size`,
+`--champion-league-weight` (доля мест в лиге против `lu_sol`, по умолчанию 0.35,
+`0` — отключить),
 `--selection-opponent` (по умолчанию `models/lu_sol.json`, `none` — отключить),
-`--eval-every`, `--eval-games`, `--device`, `--seed`, `--reset`.
+`--head-to-head-games`, `--eval-every`, `--eval-games`, `--device`, `--seed`,
+`--reset`, `--win-weight`, `--placement-weight`, `--score-weight`,
+`--success-weight`, `--margin-weight`, `--goal-selection/--no-goal-selection`.
 
 Локальный smoke-тест (несколько секунд на CPU):
 

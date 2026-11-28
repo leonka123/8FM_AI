@@ -21,6 +21,7 @@ from __future__ import annotations
 import random
 from collections import Counter
 from dataclasses import dataclass
+from functools import lru_cache
 from typing import Iterable, NamedTuple, Sequence
 
 from .model import CARD_IDS
@@ -34,6 +35,7 @@ from .rules import (
     has_open_alexey,
     legal_actions,
     score_action_delta,
+    score_player,
     score_players,
 )
 
@@ -59,6 +61,13 @@ class Observation:
     legal: tuple[Action, ...]
     pass_receiver: int
     pass_supplier: int
+    # v4 history: every card that has ever been held in this player's hand
+    # (initial deal + every hand received via passing), as (card_id, count).
+    seen_cards: tuple[tuple[str, int], ...] = ()
+    # v4 history: every card this player has closed, as (card_id, count).
+    # Closed plays store ``card_id=None`` in ``own_plays``, so the real
+    # identity is tracked separately by the environment.
+    closed_cards: tuple[tuple[str, int], ...] = ()
 
 
 @dataclass
@@ -72,15 +81,19 @@ class StepResult:
 # ---------------------------------------------------------------------------
 # Feature layout
 #
-# Two feature layouts are supported.  Version 1 is the original 115-value
-# state / 25-value action encoding; version 2 is a superset that appends
-# combo-progress, closed-card economics, turn context, opponent board
-# pressure, Alexey pressure and success-threshold features.  Old checkpoints
-# keep loading because every encoder takes an explicit version and the
-# network stores the one it was trained with.
+# Four feature layouts are supported.  Version 1 is the original 115-value
+# state / 25-value action encoding; version 2 appends combo-progress, closed
+# card economics, turn context, opponent board pressure, Alexey pressure and
+# success-threshold features; version 3 adds per-card marginal value, exact
+# combo completion distance, opponent combo pressure, hand-quality summaries
+# and explicit scoring synergies; version 4 adds personal history: how many
+# copies of each card were already closed, total seen (hand + table + closed),
+# and which combos have already been scored.  Old checkpoints keep loading
+# because every encoder takes an explicit version and the network stores the
+# one it was trained with.
 
-LATEST_FEATURE_VERSION = 2
-SUPPORTED_FEATURE_VERSIONS = (1, 2)
+LATEST_FEATURE_VERSION = 3
+SUPPORTED_FEATURE_VERSIONS = (1, 2, 3, 4)
 
 # Combo completion thresholds used by :class:`eightfm.baselines.ComboPolicy`.
 # The feature encoder exposes the same progress signal to the network so it
@@ -155,11 +168,77 @@ def _action_feature_names_v2_extra() -> list[str]:
     ]
 
 
+def _state_feature_names_v3_extra() -> list[str]:
+    names: list[str] = []
+    # Exact marginal value of opening one more copy of every card.
+    names.extend(f"next_open_points:{card_id}" for card_id in CARD_IDS)
+    # How many copies are still missing before each combo pays off, and
+    # whether the combo is already complete from the current hand.
+    names.extend(f"combo_remaining:{card_id}" for card_id in COMBO_THRESHOLDS)
+    names.extend(f"combo_ready:{card_id}" for card_id in COMBO_THRESHOLDS)
+    # Best opponent progress on the same combo (blocking pressure).
+    names.extend(f"opponent_combo_max:{card_id}" for card_id in COMBO_THRESHOLDS)
+    names.extend((
+        "best_open_delta", "mean_open_delta", "combo_actions_available",
+        "potential_score", "ceiling_score",
+    ))
+    names.extend((
+        "synergy_evgen_amogus", "synergy_sergay_olympiad", "synergy_akim_sergay",
+        "synergy_marat_olympiad", "synergy_vanya_akim", "synergy_jaman_closed",
+    ))
+    return names
+
+
+def _action_feature_names_v3_extra() -> list[str]:
+    return [
+        "completes_combo", "combo_remaining_after", "open_delta",
+        "delta_vs_best", "delta_vs_mean", "own_score", "points_to_success",
+    ]
+
+
+def _state_feature_names_v4_extra() -> list[str]:
+    """History features: what this player has already held and closed."""
+    names: list[str] = []
+    # Copies of each card that have ever been held in this player's hand
+    # (initial deal + every hand received via passing).
+    names.extend(f"seen_counts:{card_id}" for card_id in CARD_IDS)
+    # How many copies of each card this player already closed (flat 2 points).
+    names.extend(f"closed_counts:{card_id}" for card_id in CARD_IDS)
+    # Cards that passed through the hand but were not kept on the table
+    # (seen minus currently open minus closed) -- the "real" past-hand signal.
+    names.extend(f"passed_cards:{card_id}" for card_id in CARD_IDS)
+    # Fraction of the whole deck this player has already seen.
+    names.append("seen_fraction")
+    return names
+
+
+def _action_feature_names_v4_extra() -> list[str]:
+    """History-aware action features: per-card personal history."""
+    return [
+        "closed_copies_on_card",
+        "seen_copies_on_card",
+        "passed_copies_on_card",
+    ]
+
+
 def state_feature_names(version: int = LATEST_FEATURE_VERSION) -> list[str]:
     if version == 1:
         return _state_feature_names_v1()
     if version == 2:
         return _state_feature_names_v1() + _state_feature_names_v2_extra()
+    if version == 3:
+        return (
+            _state_feature_names_v1()
+            + _state_feature_names_v2_extra()
+            + _state_feature_names_v3_extra()
+        )
+    if version == 4:
+        return (
+            _state_feature_names_v1()
+            + _state_feature_names_v2_extra()
+            + _state_feature_names_v3_extra()
+            + _state_feature_names_v4_extra()
+        )
     raise ValueError(f"Unsupported state feature version: {version}")
 
 
@@ -168,6 +247,19 @@ def action_feature_names(version: int = LATEST_FEATURE_VERSION) -> list[str]:
         return _action_feature_names_v1()
     if version == 2:
         return _action_feature_names_v1() + _action_feature_names_v2_extra()
+    if version == 3:
+        return (
+            _action_feature_names_v1()
+            + _action_feature_names_v2_extra()
+            + _action_feature_names_v3_extra()
+        )
+    if version == 4:
+        return (
+            _action_feature_names_v1()
+            + _action_feature_names_v2_extra()
+            + _action_feature_names_v3_extra()
+            + _action_feature_names_v4_extra()
+        )
     raise ValueError(f"Unsupported action feature version: {version}")
 
 
@@ -430,6 +522,228 @@ def _action_features_v2_extra(obs: Observation, action: Action) -> list[float]:
     ]
 
 
+@lru_cache(maxsize=8192)
+def _v3_delta_tables(
+    obs: Observation,
+) -> tuple[tuple[float, ...], dict[tuple[str, bool], float], float, float]:
+    """Marginal score of every open card and of every legal action.
+
+    Computing this once per observation keeps the v3 encoder cheap during
+    evaluation (the action encoder needs the best/mean legal delta, and the
+    state encoder needs the per-card open delta).
+    """
+    own_has_alexey = has_open_alexey(obs.own_plays)
+    players_with_alexey = len(obs.alexey_players)
+    open_deltas = tuple(
+        score_action_delta(
+            obs.own_plays,
+            Action(card_id, False),
+            own_has_alexey=own_has_alexey,
+            players_with_alexey=players_with_alexey,
+        )
+        for card_id in CARD_IDS
+    )
+    legal_deltas: dict[tuple[str, bool], float] = {}
+    for action in obs.legal:
+        legal_deltas[(action.card_id, action.is_closed)] = score_action_delta(
+            obs.own_plays,
+            action,
+            own_has_alexey=own_has_alexey,
+            players_with_alexey=players_with_alexey,
+        )
+    values = list(legal_deltas.values()) or [0.0]
+    return open_deltas, legal_deltas, max(values), sum(values) / len(values)
+
+
+def _state_features_v3_extra(obs: Observation) -> list[float]:
+    hand = Counter(obs.hand)
+    own_open = Counter(
+        card_id for card_id, is_closed in obs.own_plays if not is_closed and card_id
+    )
+    own_closed = sum(1 for _, is_closed in obs.own_plays if is_closed)
+    unseen = _unseen_counts(obs)
+    open_deltas, legal_deltas, _best, _mean = _v3_delta_tables(obs)
+
+    result: list[float] = [
+        max(-1.0, min(1.0, value / 20.0)) for value in open_deltas
+    ]
+    for card_id, threshold in COMBO_THRESHOLDS.items():
+        progress = own_open.get(card_id, 0) + hand.get(card_id, 0)
+        result.append(max(0.0, threshold - progress) / threshold)
+    for card_id, threshold in COMBO_THRESHOLDS.items():
+        progress = own_open.get(card_id, 0) + hand.get(card_id, 0)
+        result.append(1.0 if progress >= threshold else 0.0)
+    for card_id, threshold in COMBO_THRESHOLDS.items():
+        best = 0
+        for index, plays in enumerate(obs.all_plays):
+            if index == obs.player:
+                continue
+            best = max(
+                best,
+                sum(1 for cid, closed in plays if not closed and cid == card_id),
+            )
+        result.append(_norm(best, threshold))
+
+    open_values = [
+        value for (card_id, closed), value in legal_deltas.items() if not closed
+    ]
+    if not open_values:
+        open_values = [0.0]
+    best_open = max(open_values)
+    mean_open = sum(open_values) / len(open_values)
+    result.extend((
+        max(-1.0, min(1.0, best_open / 20.0)),
+        max(-1.0, min(1.0, mean_open / 20.0)),
+        _norm(
+            sum(
+                1
+                for (card_id, closed), _value in legal_deltas.items()
+                if not closed
+                and card_id in COMBO_THRESHOLDS
+                and own_open.get(card_id, 0) + hand.get(card_id, 0)
+                >= COMBO_THRESHOLDS[card_id]
+            ),
+            max(1, len(obs.hand)),
+        ),
+    ))
+
+    own_has_alexey = has_open_alexey(obs.own_plays)
+    players_with_alexey = len(obs.alexey_players)
+    new_plays = list(obs.own_plays) + [(card_id, False) for card_id in obs.hand]
+    new_alexey = players_with_alexey + (
+        1 if (not own_has_alexey and hand.get("alaksiej", 0) > 0) else 0
+    )
+    result.append(_norm(score_player(new_plays, new_alexey), 150.0))
+    ceiling_plays = new_plays + [
+        (card_id, False)
+        for card_id in CARD_IDS
+        for _ in range(unseen.get(card_id, 0))
+    ]
+    ceiling_alexey = players_with_alexey + (
+        1
+        if (
+            not own_has_alexey
+            and hand.get("alaksiej", 0) + unseen.get("alaksiej", 0) > 0
+        )
+        else 0
+    )
+    result.append(_norm(score_player(ceiling_plays, ceiling_alexey), 250.0))
+    result.extend((
+        _norm(own_open.get("evgen", 0) * own_open.get("amogus", 0), 12.0),
+        _norm(own_open.get("sergay", 0) * own_open.get("olympiad", 0), 20.0),
+        _norm(own_open.get("akim", 0) * own_open.get("sergay", 0), 12.0),
+        _norm(own_open.get("marat", 0) * own_open.get("olympiad", 0), 16.0),
+        _norm(own_open.get("vanya", 0) * own_open.get("akim", 0), 12.0),
+        _norm(own_open.get("jaman", 0) * own_closed, 20.0),
+    ))
+    return result
+
+
+def _state_features_v4_extra(obs: Observation) -> list[float]:
+    """History features v4: what this player has held, closed, and passed on.
+
+    ``seen_cards`` accumulates every card that ever entered this player's hand,
+    including hands received by passing that the player did not play. This is
+    the card-counting signal a human uses ("I already saw three Evgens").
+    """
+    hand = Counter(obs.hand)
+    own_open = Counter(
+        card_id for card_id, is_closed in obs.own_plays if not is_closed and card_id
+    )
+    closed_by_card = Counter(dict(obs.closed_cards))
+    seen = Counter(dict(obs.seen_cards))
+    deck = dict(obs.deck_counts)
+    deck_total = sum(deck.values())
+    seen_total = sum(seen.values())
+
+    result: list[float] = []
+
+    # seen_counts:{card}
+    for card_id in CARD_IDS:
+        result.append(_norm(seen.get(card_id, 0), 4.0))
+
+    # closed_counts:{card}
+    for card_id in CARD_IDS:
+        result.append(_norm(closed_by_card.get(card_id, 0), 4.0))
+
+    # passed_cards:{card} = seen - in_hand - open - closed (cards seen but
+    # passed to a neighbour without being kept on the table or closed).
+    for card_id in CARD_IDS:
+        passed = (
+            seen.get(card_id, 0)
+            - hand.get(card_id, 0)
+            - own_open.get(card_id, 0)
+            - closed_by_card.get(card_id, 0)
+        )
+        result.append(_norm(max(0, passed), 4.0))
+
+    # seen_fraction: how much of the whole deck this player has seen.
+    result.append(_norm(seen_total, max(1, deck_total)))
+
+    return result
+
+
+def _action_features_v3_extra(obs: Observation, action: Action) -> list[float]:
+    hand = Counter(obs.hand)
+    own_open = Counter(
+        card_id for card_id, is_closed in obs.own_plays if not is_closed and card_id
+    )
+    open_deltas, legal_deltas, best, mean = _v3_delta_tables(obs)
+    card_id = action.card_id
+    threshold = COMBO_THRESHOLDS.get(card_id)
+    progress = own_open.get(card_id, 0) + hand.get(card_id, 0)
+    if threshold is not None and not action.is_closed:
+        completes = 1.0 if progress >= threshold else 0.0
+        remaining = max(0.0, threshold - progress) / threshold
+    else:
+        completes = 0.0
+        remaining = 0.0
+    open_delta = open_deltas[CARD_IDS.index(card_id)]
+    delta = legal_deltas.get((card_id, action.is_closed))
+    if delta is None:
+        delta = score_action_delta(
+            obs.own_plays,
+            action,
+            own_has_alexey=has_open_alexey(obs.own_plays),
+            players_with_alexey=len(obs.alexey_players),
+        )
+    own_score = float(obs.scores[obs.player])
+    return [
+        completes,
+        remaining,
+        max(-1.0, min(1.0, open_delta / 20.0)),
+        max(-1.0, min(1.0, (delta - best) / 20.0)),
+        max(-1.0, min(1.0, (delta - mean) / 20.0)),
+        _norm(own_score, 150.0),
+        _norm(max(0.0, _SUCCESS_THRESHOLD - own_score), _SUCCESS_THRESHOLD),
+    ]
+
+
+def _action_features_v4_extra(obs: Observation, action: Action) -> list[float]:
+    """History-aware per-action features: what this player already did with the card."""
+    hand = Counter(obs.hand)
+    own_open = Counter(
+        card_id for card_id, is_closed in obs.own_plays if not is_closed and card_id
+    )
+    closed_by_card = Counter(dict(obs.closed_cards))
+    seen = Counter(dict(obs.seen_cards))
+    card_id = action.card_id
+    closed_on_card = closed_by_card.get(card_id, 0)
+    seen_on_card = seen.get(card_id, 0)
+    passed_on_card = max(
+        0,
+        seen_on_card
+        - hand.get(card_id, 0)
+        - own_open.get(card_id, 0)
+        - closed_on_card,
+    )
+    return [
+        _norm(closed_on_card, 4.0),
+        _norm(seen_on_card, 4.0),
+        _norm(passed_on_card, 4.0),
+    ]
+
+
 def state_features(
     obs: Observation, version: int = LATEST_FEATURE_VERSION
 ) -> list[float]:
@@ -438,6 +752,15 @@ def state_features(
         return base
     if version == 2:
         return base + _state_features_v2_extra(obs)
+    if version == 3:
+        return base + _state_features_v2_extra(obs) + _state_features_v3_extra(obs)
+    if version == 4:
+        return (
+            base
+            + _state_features_v2_extra(obs)
+            + _state_features_v3_extra(obs)
+            + _state_features_v4_extra(obs)
+        )
     raise ValueError(f"Unsupported state feature version: {version}")
 
 
@@ -449,6 +772,19 @@ def action_features(
         return base
     if version == 2:
         return base + _action_features_v2_extra(obs, action)
+    if version == 3:
+        return (
+            base
+            + _action_features_v2_extra(obs, action)
+            + _action_features_v3_extra(obs, action)
+        )
+    if version == 4:
+        return (
+            base
+            + _action_features_v2_extra(obs, action)
+            + _action_features_v3_extra(obs, action)
+            + _action_features_v4_extra(obs, action)
+        )
     raise ValueError(f"Unsupported action feature version: {version}")
 
 
@@ -477,6 +813,10 @@ class ClassicEnv:
             self.round_decks[0][index * 6:(index + 1) * 6] for index in range(n)
         ]
         self.played: list[list[Play]] = [[] for _ in range(n)]
+        # v4 history: everything each player has ever held in hand.
+        self.seen: list[Counter[str]] = [Counter(hand) for hand in self.hands]
+        # v4 history: identity of every card each player has closed.
+        self.closed_cards: list[Counter[str]] = [Counter() for _ in range(n)]
         self.scores = [0.0] * n
         self.round_number = 1
         self.turn_number = 1
@@ -519,6 +859,14 @@ class ClassicEnv:
             legal=tuple(legal_actions(self.hands[player], self.played[player])),
             pass_receiver=self.pass_receiver(player),
             pass_supplier=self.pass_supplier(player),
+            seen_cards=tuple(
+                (card_id, int(self.seen[player].get(card_id, 0)))
+                for card_id in CARD_IDS
+            ),
+            closed_cards=tuple(
+                (card_id, int(self.closed_cards[player].get(card_id, 0)))
+                for card_id in CARD_IDS
+            ),
         )
 
     def observations(self) -> list[Observation]:
@@ -545,6 +893,7 @@ class ClassicEnv:
             self.played[player].append(play)
             if play.is_closed:
                 self.closed_total += 1
+                self.closed_cards[player][action.card_id] += 1
             elif play.card_id == "alaksiej":
                 self.alexey_players.add(player)
 
@@ -588,6 +937,9 @@ class ClassicEnv:
         if any(hand is None for hand in new_hands):
             raise RuntimeError("Passing hands lost a player")
         self.hands = [list(hand) for hand in new_hands]  # type: ignore[arg-type]
+        # v4 history: the received cards are now part of what this player saw.
+        for player, hand in enumerate(self.hands):
+            self.seen[player].update(hand)
 
     def _finish_round(self) -> None:
         if self.round_number == 1:
@@ -598,6 +950,9 @@ class ClassicEnv:
                 list(self.round_decks[1][index * 6:(index + 1) * 6])
                 for index in range(n)
             ]
+            # v4 history: the fresh round-2 deal is new information.
+            for player, hand in enumerate(self.hands):
+                self.seen[player].update(hand)
         else:
             self.done = True
 

@@ -29,7 +29,12 @@ from .baselines import ComboPolicy
 from .env import LATEST_FEATURE_VERSION, action_feature_size, state_feature_size
 from .model import CARD_IDS
 from .rl import RLNetwork, load_rl, save_rl
-from .rl_train import _composite_score, evaluate_rl, sample_player_count
+from .rl_train import (
+    _composite_score,
+    _goal_composite_score,
+    evaluate_rl,
+    sample_player_count,
+)
 from .torch_env import (
     ACTION_SIZE,
     ALEXEY,
@@ -38,6 +43,11 @@ from .torch_env import (
     BatchedClassicEnv,
     BatchedObservation,
 )
+
+
+# Reserved league id for the reigning champion (``lu_sol`` by default).  It is
+# deliberately far above the snapshot ids (4, 5, ...) so it can never clash.
+CHAMPION_OPPONENT_ID = 1000
 
 
 # ---------------------------------------------------------------------------
@@ -247,19 +257,42 @@ class BatchedRandomPolicy:
 
 
 class BatchedNetPolicy:
-    """A frozen torch checkpoint used as a league opponent (greedy by default)."""
+    """A frozen torch checkpoint used as a league opponent (greedy by default).
+
+    Feature layouts are prefix-nested (v1 ⊂ v2 ⊂ v3 ⊂ v4), so a checkpoint
+    trained on an older layout can consume the first ``N`` columns of a richer
+    observation.  That is what lets the v2 champion ``lu_sol`` play in the
+    league of a v4 learner instead of being restricted to the selection eval.
+    """
 
     def __init__(self, model: TorchActorCritic, *, greedy: bool = True) -> None:
         self.model = model
         self.greedy = greedy
+        self.state_dim = state_feature_size(model.feature_version)
+        self.action_dim = action_feature_size(model.feature_version)
+
+    def _slice(
+        self, observation: BatchedObservation
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        state = observation.state_features
+        actions = observation.action_features
+        if state.shape[-1] < self.state_dim or actions.shape[-1] < self.action_dim:
+            raise ValueError(
+                "Opponent feature layout is richer than the learner's; only "
+                "prefix-nested layouts (v1 ⊂ v2 ⊂ v3 ⊂ v4) can be mixed."
+            )
+        if state.shape[-1] > self.state_dim:
+            state = state[..., : self.state_dim]
+        if actions.shape[-1] > self.action_dim:
+            actions = actions[..., : self.action_dim]
+        return state, actions
 
     def act(
         self, observation: BatchedObservation, generator: torch.Generator
     ) -> torch.Tensor:
+        state, actions = self._slice(observation)
         with torch.no_grad():
-            scores, _values = self.model(
-                observation.state_features, observation.action_features
-            )
+            scores, _values = self.model(state, actions)
         if self.greedy:
             return scores.masked_fill(~observation.legal, -1e9).argmax(dim=-1)
         probabilities = masked_softmax_torch(scores, observation.legal)
@@ -303,10 +336,18 @@ def collect_torch_rollout(
     gae_lambda: float = 0.95,
     temperature: float = 1.0,
     generator: torch.Generator | None = None,
-    feature_version: int = LATEST_FEATURE_VERSION,
+    feature_version: int | None = None,
+    success_threshold: float = 60.0,
+    win_weight: float = 1.5,
+    placement_weight: float = 0.7,
+    score_weight: float = 0.4,
+    success_weight: float = 0.4,
+    margin_weight: float = 0.2,
 ) -> TorchRollout:
     """Play one batch of games and collect learner decisions with GAE returns."""
     device = env.device
+    if feature_version is None:
+        feature_version = model.feature_version
     if generator is None:
         generator = torch.Generator(device=device)
         generator.manual_seed(0)
@@ -364,7 +405,14 @@ def collect_torch_rollout(
         rewards, _done = env.step(actions)
         dense_rewards.append(rewards)
 
-    terminal = env.terminal_rewards()
+    terminal = env.terminal_rewards(
+        success_threshold=success_threshold,
+        win_weight=win_weight,
+        placement_weight=placement_weight,
+        score_weight=score_weight,
+        success_weight=success_weight,
+        margin_weight=margin_weight,
+    )
     ranks = env.final_ranks()
 
     turns = len(dense_rewards)
@@ -427,6 +475,98 @@ def combine_torch_rollouts(rollouts: Sequence[TorchRollout]) -> TorchRollout:
         player_count=rollouts[0].player_count if len(counts) == 1 else 0,
         num_games=sum(rollout.num_games for rollout in rollouts),
     )
+
+
+# ---------------------------------------------------------------------------
+# Fast batched head-to-head evaluation
+
+
+def head_to_head_report_torch(
+    candidate: TorchActorCritic,
+    opponent: RLNetwork,
+    *,
+    player_counts: Sequence[int] = (3, 4, 5, 6, 7),
+    games: int = 100,
+    seed_base: int = 60000,
+    device: str | torch.device | None = None,
+) -> dict[str, Any]:
+    """Batched version of :func:`eightfm.rl_train.head_to_head_report`.
+
+    The NumPy report is exact but runs one Python forward per seat per turn;
+    a 500-game check costs minutes.  This version plays the same controlled-seat
+    match in :class:`BatchedClassicEnv`, so the selector can afford a reliable
+    head-to-head sample every evaluation without eating the training budget.
+
+    The candidate sits in one seat per game (rotating across games) and the
+    opponent fills every other seat.  ``win_rate`` above ``chance`` means the
+    candidate is the stronger policy.
+    """
+    if device is None:
+        device = next(candidate.parameters()).device
+    else:
+        device = torch.device(device)
+
+    candidate.eval()
+    opponent_model = TorchActorCritic.from_rl_network(opponent, seed=seed_base + 1)
+    opponent_model.to(device).eval()
+    opponent_state_dim = state_feature_size(opponent.feature_version)
+    opponent_action_dim = action_feature_size(opponent.feature_version)
+    if (
+        opponent_state_dim > state_feature_size(candidate.feature_version)
+        or opponent_action_dim > action_feature_size(candidate.feature_version)
+    ):
+        raise ValueError(
+            "Opponent feature layout must be a prefix of the candidate layout "
+            "(v1 ⊂ v2 ⊂ v3 ⊂ v4)."
+        )
+
+    wins: list[float] = []
+    scores: list[float] = []
+    margins: list[float] = []
+    successes: list[float] = []
+    for player_count in player_counts:
+        batch = max(1, int(games))
+        env = BatchedClassicEnv(player_count, batch, device=device, seed=seed_base + player_count * 1000)
+        seats = torch.arange(batch, device=device) % player_count
+        candidate_mask = torch.zeros(batch, player_count, dtype=torch.bool, device=device)
+        candidate_mask[torch.arange(batch, device=device), seats] = True
+
+        for _turn in range(10):
+            observation = env.observation(candidate.feature_version)
+            with torch.no_grad():
+                candidate_scores, _ = candidate(
+                    observation.state_features, observation.action_features
+                )
+                opponent_scores, _ = opponent_model(
+                    observation.state_features[..., :opponent_state_dim],
+                    observation.action_features[..., :opponent_action_dim],
+                )
+            candidate_actions = candidate_scores.masked_fill(~observation.legal, -1e9).argmax(dim=-1)
+            opponent_actions = opponent_scores.masked_fill(~observation.legal, -1e9).argmax(dim=-1)
+            actions = torch.where(candidate_mask, candidate_actions, opponent_actions)
+            env.step(actions)
+
+        final_scores = env.scores
+        ranks = env.final_ranks()
+        own_scores = final_scores[candidate_mask]
+        own_ranks = ranks[candidate_mask]
+        own_total = final_scores.gather(1, seats.unsqueeze(1)).squeeze(1)
+        others_mean = (final_scores.sum(dim=1) - own_total) / max(1, player_count - 1)
+
+        wins.append(float((own_ranks == 1).to(torch.float32).mean()))
+        scores.append(float(own_scores.mean()))
+        margins.append(float((own_scores - others_mean).mean()))
+        successes.append(float((own_scores > 60.0).to(torch.float32).mean()))
+
+    chance = float(np.mean([1.0 / count for count in player_counts])) if player_counts else 0.0
+    return {
+        "win_rate": float(np.mean(wins)) if wins else 0.0,
+        "mean_score": float(np.mean(scores)) if scores else 0.0,
+        "mean_margin": float(np.mean(margins)) if margins else 0.0,
+        "success_rate": float(np.mean(successes)) if successes else 0.0,
+        "chance": chance,
+        "games": games,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -782,10 +922,18 @@ def train_rl_torch(
     huber_delta: float | None = 1.0,
     target_kl: float | None = 0.03,
     l2: float = 0.0,
+    success_threshold: float = 60.0,
+    win_weight: float = 1.5,
+    placement_weight: float = 0.7,
+    score_weight: float = 0.4,
+    success_weight: float = 0.4,
+    margin_weight: float = 0.2,
+    goal_selection: bool = False,
     league_fraction: float = 0.65,
     snapshot_every: int = 25,
     snapshot_pool_size: int = 12,
     snapshot_weight: float = 0.3,
+    champion_league_weight: float = 0.0,
     selection_opponent_path: str | Path | None = "models/classic-rl.json",
     head_to_head_games: int = 40,
     checkpoint_every: int = 25,
@@ -812,6 +960,13 @@ def train_rl_torch(
 
     if resume:
         network = load_rl(resume)
+        if int(network.feature_version) != int(feature_version):
+            raise ValueError(
+                f"Resume checkpoint uses feature layout v{network.feature_version}, "
+                f"but feature_version={feature_version} was requested. Refusing to "
+                "silently continue with the wrong layout: start a fresh run "
+                "(--reset or a new work dir) or pass the matching --feature-version."
+            )
         feature_version = network.feature_version
         model = TorchActorCritic.from_rl_network(network, seed=seed)
         if verbose:
@@ -859,10 +1014,19 @@ def train_rl_torch(
             "value_clip": value_clip,
             "huber_delta": huber_delta,
             "target_kl": target_kl,
+            "success_threshold": success_threshold,
+            "win_weight": win_weight,
+            "placement_weight": placement_weight,
+            "score_weight": score_weight,
+            "success_weight": success_weight,
+            "margin_weight": margin_weight,
+            "goal_selection": goal_selection,
             "league_fraction": league_fraction,
             "snapshot_every": snapshot_every,
             "snapshot_pool_size": snapshot_pool_size,
             "snapshot_weight": snapshot_weight,
+            "champion_league_weight": champion_league_weight,
+            "selection_opponent_path": str(selection_opponent_path),
             "hidden1": hidden1,
             "hidden2": hidden2,
             "action_hidden": action_hidden,
@@ -913,6 +1077,17 @@ def train_rl_torch(
     if selection_opponent_path and Path(selection_opponent_path).exists():
         selection_opponent = load_rl(selection_opponent_path)
 
+    # The champion can also be a live league opponent, not just a selector.
+    # Training directly against the exact policy the model must dethrone is a
+    # far stronger signal than only evaluating against it every N updates.
+    champion_policy = None
+    if champion_league_weight > 0.0 and selection_opponent is not None:
+        champion_model = TorchActorCritic.from_rl_network(
+            selection_opponent, seed=seed + 101
+        )
+        champion_model.to(device).eval()
+        champion_policy = BatchedNetPolicy(champion_model, greedy=True)
+
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
     snapshots: list[TorchActorCritic] = []
     best_score = float("-inf")
@@ -942,6 +1117,10 @@ def train_rl_torch(
             opponents[4 + index] = BatchedNetPolicy(snapshot, greedy=True)
             opponent_ids.append(4 + index)
             opponent_weights.append(snapshot_weight)
+        if champion_policy is not None:
+            opponents[CHAMPION_OPPONENT_ID] = champion_policy
+            opponent_ids.append(CHAMPION_OPPONENT_ID)
+            opponent_weights.append(champion_league_weight)
 
         specs = _sample_torch_specs(
             rng, progress, games_per_update, league_fraction, opponent_ids, opponent_weights
@@ -972,6 +1151,12 @@ def train_rl_torch(
                     gae_lambda=gae_lambda,
                     generator=generator,
                     feature_version=feature_version,
+                    success_threshold=success_threshold,
+                    win_weight=win_weight,
+                    placement_weight=placement_weight,
+                    score_weight=score_weight,
+                    success_weight=success_weight,
+                    margin_weight=margin_weight,
                 )
             )
         data = combine_torch_rollouts(rollouts)
@@ -1039,12 +1224,41 @@ def train_rl_torch(
                 games=eval_games,
                 seed_base=eval_seed_base,
                 supervised_model=supervised_model,
-                selection_opponent=selection_opponent,
+                # The champion match is played in the batched torch simulator
+                # below; the NumPy path would spend minutes per evaluation.
+                selection_opponent=None,
                 head_to_head_games=head_to_head_games,
             )
+            if selection_opponent is not None:
+                head_to_head = head_to_head_report_torch(
+                    model,
+                    selection_opponent,
+                    player_counts=player_counts,
+                    games=head_to_head_games,
+                    seed_base=eval_seed_base + 700000,
+                    device=device,
+                )
+                eval_report["head_to_head"] = head_to_head
+                summary = eval_report["summary"]
+                summary["head_to_head_win_rate"] = head_to_head["win_rate"]
+                summary["head_to_head_chance"] = head_to_head["chance"]
+                summary["head_to_head_edge"] = (
+                    (head_to_head["win_rate"] - head_to_head["chance"])
+                    / head_to_head["chance"]
+                    if head_to_head["chance"] > 0.0
+                    else 0.0
+                )
+                summary["head_to_head_gate_passed"] = bool(
+                    head_to_head["win_rate"] > head_to_head["chance"]
+                )
             eval_report["update"] = update
             metrics["evaluations"].append(eval_report)
-            score = _composite_score(eval_report)
+            score = (
+                _goal_composite_score(eval_report)
+                if goal_selection
+                else _composite_score(eval_report)
+            )
+            eval_report["selection_score"] = score
             if verbose:
                 summary = eval_report["summary"]
                 print(
@@ -1130,7 +1344,7 @@ def train_lu_sol_torch(
     hidden1: int = 512,
     hidden2: int = 256,
     action_hidden: int = 256,
-    feature_version: int = LATEST_FEATURE_VERSION,
+    feature_version: int = 2,
     device: str | torch.device | None = "auto",
     eval_every: int = 50,
     eval_games: int = 60,
@@ -1199,39 +1413,53 @@ def train_lu_sol_torch(
 #
 # ``lu_astra`` is not a new architecture: it is the proven :class:`TorchActorCritic`
 # (and therefore the exact ``RLNetwork`` JSON the apps load) pushed as far as the
-# 12-hour Kaggle GPU budget allows.  The uplift over ``lu_sol`` is:
+# 12-hour Kaggle GPU budget allows.  The v3 uplift over ``lu_sol`` is:
 #
-# * a much wider net (1024/512/512 vs 512/256/256) for more expressive play;
-# * more PPO passes per batch and a longer, smoother anneal;
-# * a deeper, more aggressive league and a stronger head-to-head selector
-#   (it is selected *against lu_sol*, so the best checkpoint is the one that
-#   actually beats the reigning champion, not just the bots);
-# * longer behaviour-cloning warm start and larger evaluation.
+# * feature layout v4 (250 state / 42 action inputs): everything from v3 plus
+#   personal hand history -- every card ever held (including passed hands),
+#   every card closed, and cards seen but passed on, i.e. the card-counting
+#   signal a human uses;
+# * a wider net (2048/1024/1024 vs 512/256/256) for far more expressive play;
+# * more games per PPO update and larger minibatches;
+# * a score-heavy terminal reward, because the acceptance criterion is a 60+
+#   point average rather than just winning a low-scoring table;
+# * checkpoint selection by :func:`_goal_composite_score`, which makes beating
+#   ``lu_sol`` a hard gate and only then optimises the candidate's own mean
+#   score and >60 success rate;
+# * ``lu_sol`` is also a live league opponent (``champion_league_weight``), so
+#   the learner is trained directly against the champion it must dethrone.
 #
 # Keeping the architecture identical is deliberate: every checkpoint exports to
 # the same JSON format, so the desktop/Telegram apps and the tournament load it
 # with no changes at all.
 
-LU_ASTRA_LEARNING_RATE = 4e-4
-LU_ASTRA_LEARNING_RATE_FINAL = 1e-5
-LU_ASTRA_ENTROPY = 0.04
-LU_ASTRA_ENTROPY_FINAL = 0.002
+LU_ASTRA_FEATURE_VERSION = 4
+LU_ASTRA_LEARNING_RATE = 3e-4
+LU_ASTRA_LEARNING_RATE_FINAL = 5e-6
+LU_ASTRA_ENTROPY = 0.03
+LU_ASTRA_ENTROPY_FINAL = 0.001
+# Score first: 60 points and a >60 finish together outweigh a bare win.
+LU_ASTRA_WIN_WEIGHT = 1.0
+LU_ASTRA_PLACEMENT_WEIGHT = 0.3
+LU_ASTRA_SCORE_WEIGHT = 1.2
+LU_ASTRA_SUCCESS_WEIGHT = 1.5
+LU_ASTRA_MARGIN_WEIGHT = 0.4
 
 
 def train_lu_astra(
     *,
-    updates: int = 8000,
-    games_per_update: int = 512,
+    updates: int = 15000,
+    games_per_update: int = 1024,
     player_counts: Sequence[int] = (3, 4, 5, 6, 7),
     seed: int = 8_2026,
-    warm_start_games: int = 12000,
-    bc_epochs: int = 24,
+    warm_start_games: int = 20000,
+    bc_epochs: int = 20,
     bc_batch_size: int = 1024,
     bc_learning_rate: float = 1e-3,
     learning_rate: float = LU_ASTRA_LEARNING_RATE,
     learning_rate_final: float | None = LU_ASTRA_LEARNING_RATE_FINAL,
-    batch_size: int = 1024,
-    ppo_epochs: int = 12,
+    batch_size: int = 4096,
+    ppo_epochs: int = 6,
     clip_ratio: float = 0.2,
     gamma: float = 0.99,
     gae_lambda: float = 0.95,
@@ -1240,23 +1468,31 @@ def train_lu_astra(
     value_coef: float = 0.5,
     value_clip: float | None = 0.2,
     huber_delta: float | None = 1.0,
-    target_kl: float | None = 0.03,
+    target_kl: float | None = 0.02,
     l2: float = 0.0,
-    league_fraction: float = 0.75,
-    snapshot_every: int = 20,
-    snapshot_pool_size: int = 16,
-    snapshot_weight: float = 0.35,
+    success_threshold: float = 60.0,
+    win_weight: float = LU_ASTRA_WIN_WEIGHT,
+    placement_weight: float = LU_ASTRA_PLACEMENT_WEIGHT,
+    score_weight: float = LU_ASTRA_SCORE_WEIGHT,
+    success_weight: float = LU_ASTRA_SUCCESS_WEIGHT,
+    margin_weight: float = LU_ASTRA_MARGIN_WEIGHT,
+    goal_selection: bool = True,
+    league_fraction: float = 0.85,
+    snapshot_every: int = 15,
+    snapshot_pool_size: int = 24,
+    snapshot_weight: float = 0.15,
+    champion_league_weight: float = 0.35,
     selection_opponent_path: str | Path | None = "models/lu_sol.json",
-    head_to_head_games: int = 60,
+    head_to_head_games: int = 100,
     checkpoint_every: int = 25,
     checkpoint_dir: str | Path | None = "models/lu_astra-checkpoints",
-    hidden1: int = 1024,
-    hidden2: int = 512,
-    action_hidden: int = 512,
-    feature_version: int = LATEST_FEATURE_VERSION,
+    hidden1: int = 2048,
+    hidden2: int = 1024,
+    action_hidden: int = 1024,
+    feature_version: int = LU_ASTRA_FEATURE_VERSION,
     device: str | torch.device | None = "auto",
-    eval_every: int = 50,
-    eval_games: int = 80,
+    eval_every: int = 100,
+    eval_games: int = 50,
     eval_seed_base: int = 50000,
     supervised_model: Any | None = None,
     output: str | Path = "models/lu_astra.json",
@@ -1269,9 +1505,11 @@ def train_lu_astra(
     """Train ``lu_astra`` on the vectorised torch backend.
 
     A thin preset over :func:`train_rl_torch`: the same network, simulator and
-    export path that produced ``lu_sol``, only larger and trained longer.  Every
-    returned checkpoint is a plain :class:`eightfm.rl.RLNetwork` JSON, so it
-    can be dropped into ``models/`` and used immediately.
+    export path that produced ``lu_sol``, only with the v4 feature layout,
+    larger batches, a score-heavy reward, a live league seat for ``lu_sol`` and
+    a champion-gated 60-point selection metric.  Every returned checkpoint is a
+    plain :class:`eightfm.rl.RLNetwork` JSON, so it can be dropped into
+    ``models/`` and used immediately.
     """
     return train_rl_torch(
         updates=updates,
@@ -1296,10 +1534,18 @@ def train_lu_astra(
         huber_delta=huber_delta,
         target_kl=target_kl,
         l2=l2,
+        success_threshold=success_threshold,
+        win_weight=win_weight,
+        placement_weight=placement_weight,
+        score_weight=score_weight,
+        success_weight=success_weight,
+        margin_weight=margin_weight,
+        goal_selection=goal_selection,
         league_fraction=league_fraction,
         snapshot_every=snapshot_every,
         snapshot_pool_size=snapshot_pool_size,
         snapshot_weight=snapshot_weight,
+        champion_league_weight=champion_league_weight,
         selection_opponent_path=selection_opponent_path,
         head_to_head_games=head_to_head_games,
         checkpoint_every=checkpoint_every,

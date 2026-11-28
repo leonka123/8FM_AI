@@ -29,7 +29,7 @@ from typing import Any
 import torch
 import torch.nn.functional as F
 
-from .env import COMBO_THRESHOLDS, LATEST_FEATURE_VERSION, SUPPORTED_FEATURE_VERSIONS
+from .env import COMBO_THRESHOLDS, LATEST_FEATURE_VERSION, SUPPORTED_FEATURE_VERSIONS, CARD_IDS
 from .model import CARD_IDS
 from .rules import ALEXEY_TOTALS, CLOSED_POINTS, DECK_COUNTS, deck_for_players
 
@@ -251,8 +251,11 @@ class BatchedClassicEnv:
         second = shuffled[:, half:].reshape(b, n, 6)
         self.hand = self._counts(first)
         self.round2_hand = self._counts(second)
+        # v4 history: every card ever held in hand (initial deal + passed hands).
+        self.seen = self.hand.clone()
         self.open = torch.zeros(b, n, NUM_CARDS, dtype=self.dtype, device=self.device)
         self.closed = torch.zeros(b, n, dtype=self.dtype, device=self.device)
+        self.closed_counts = torch.zeros(b, n, NUM_CARDS, dtype=self.dtype, device=self.device)
         self.scores = torch.zeros(b, n, dtype=self.dtype, device=self.device)
         self.closed_total = torch.zeros(b, dtype=self.dtype, device=self.device)
         self.round_number = 1
@@ -277,6 +280,9 @@ class BatchedClassicEnv:
         open_add = (~is_closed).to(self.dtype).unsqueeze(-1)
         self.open.scatter_add_(-1, card.unsqueeze(-1), open_add)
         self.closed = self.closed + is_closed.to(self.dtype)
+        self.closed_counts.scatter_add_(
+            2, card.unsqueeze(-1), is_closed.to(self.dtype).unsqueeze(-1)
+        )
         self.closed_total = self.closed_total + is_closed.to(self.dtype).sum(dim=1)
         players_with_alexey = (self.open[..., ALEXEY] > 0).sum(dim=1)
         self.scores = score_batched(self.open, self.closed, players_with_alexey)
@@ -287,11 +293,13 @@ class BatchedClassicEnv:
         if self.turn_number < 5:
             offset = -1 if self.round_number == 1 else 1
             self.hand = torch.roll(self.hand, shifts=offset, dims=1)
+            self.seen = self.seen + self.hand
             self.turn_number += 1
         elif self.round_number == 1:
             self.round_number = 2
             self.turn_number = 1
             self.hand = self.round2_hand.clone()
+            self.seen = self.seen + self.hand
         else:
             self.done = True
         return rewards, self.done
@@ -405,6 +413,8 @@ class BatchedClassicEnv:
             "c": c,
             "open_counts": open_counts,
             "closed": closed,
+            "closed_counts": self.closed_counts,
+            "seen": self.seen,
             "hand": hand,
             "scores": scores,
             "table_open": table_open,
@@ -514,7 +524,7 @@ class BatchedClassicEnv:
 
         if version == 1:
             return torch.cat(parts, dim=-1)
-        if version != 2:
+        if version not in (2, 3, 4):
             raise ValueError(f"Unsupported state feature version: {version}")
 
         extra: list[torch.Tensor] = []
@@ -555,7 +565,132 @@ class BatchedClassicEnv:
         extra.append(_norm((60.0 - scores).clamp(min=0.0), 60.0).unsqueeze(-1))
         extra.append((scores > 60.0).to(dtype).unsqueeze(-1))
         parts.append(torch.cat(extra, dim=-1))
+        if version == 3:
+            parts.append(self._state_features_v3(base))
+        if version == 4:
+            parts.append(self._state_features_v3(base))
+            parts.append(self._state_features_v4(base))
         return torch.cat(parts, dim=-1)
+
+    def _state_features_v3(self, base: dict[str, Any]) -> torch.Tensor:
+        b, n, c = base["b"], base["n"], base["c"]
+        device = self.device
+        dtype = self.dtype
+        open_counts = base["open_counts"]
+        closed = base["closed"]
+        hand = base["hand"]
+        scores = base["scores"]
+        unseen = base["unseen"]
+        legal = base["legal"]
+        delta = base["delta"]
+
+        # Exact marginal value of opening one more copy of every card.
+        extras: list[torch.Tensor] = [
+            (delta[..., 0::2] / 20.0).clamp(-1.0, 1.0)
+        ]
+
+        # Copies still missing before each combo pays off, then readiness.
+        for card_id, threshold in COMBO_THRESHOLDS.items():
+            index = CARD_INDEX[card_id]
+            progress = open_counts[..., index] + hand[..., index]
+            missing = (threshold - progress).clamp(min=0.0) / float(threshold)
+            extras.append(missing.unsqueeze(-1))
+        for card_id, threshold in COMBO_THRESHOLDS.items():
+            index = CARD_INDEX[card_id]
+            progress = open_counts[..., index] + hand[..., index]
+            extras.append((progress >= threshold).to(dtype).unsqueeze(-1))
+        for card_id, threshold in COMBO_THRESHOLDS.items():
+            index = CARD_INDEX[card_id]
+            counts = open_counts[..., index]
+            opponents = counts.unsqueeze(1).expand(b, n, n).masked_fill(
+                base["eye_n"], -1.0
+            )
+            best = opponents.max(dim=-1).values.clamp(min=0.0)
+            extras.append(_norm(best, float(threshold)).unsqueeze(-1))
+
+        legal_open = legal[..., 0::2]
+        open_delta = delta[..., 0::2]
+        masked_open = open_delta.masked_fill(~legal_open, -1e9)
+        any_open = legal_open.any(dim=-1)
+        best_open = torch.where(
+            any_open, masked_open.max(dim=-1).values, torch.zeros_like(scores)
+        )
+        mean_open = (
+            (open_delta * legal_open.to(dtype)).sum(dim=-1)
+            / legal_open.to(dtype).sum(dim=-1).clamp(min=1.0)
+        )
+        thresholds = torch.ones(c, dtype=dtype, device=device)
+        has_threshold = torch.zeros(c, dtype=torch.bool, device=device)
+        for card_id, threshold in COMBO_THRESHOLDS.items():
+            index = CARD_INDEX[card_id]
+            thresholds[index] = float(threshold)
+            has_threshold[index] = True
+        combo_ready_card = ((open_counts + hand) >= thresholds) & has_threshold
+        combo_actions = (
+            (legal_open & combo_ready_card).to(dtype).sum(dim=-1)
+            / hand.sum(dim=-1).clamp(min=1.0)
+        )
+        extras.extend((
+            (best_open / 20.0).clamp(-1.0, 1.0).unsqueeze(-1),
+            (mean_open / 20.0).clamp(-1.0, 1.0).unsqueeze(-1),
+            combo_actions.unsqueeze(-1),
+        ))
+
+        pwa = base["players_with_alexey"].to(dtype).view(b, 1)
+        add_alex = base["add_alex"]
+        potential_pwa = pwa + add_alex * (hand[..., ALEXEY] > 0).to(dtype)
+        potential = score_batched(open_counts + hand, closed, potential_pwa)
+        extras.append(_norm(potential, 150.0).unsqueeze(-1))
+
+        ceiling_pwa = pwa + add_alex * (
+            (hand[..., ALEXEY] + unseen[..., ALEXEY]) > 0
+        ).to(dtype)
+        ceiling = score_batched(open_counts + hand + unseen, closed, ceiling_pwa)
+        extras.append(_norm(ceiling, 250.0).unsqueeze(-1))
+
+        evgen = open_counts[..., EVGEN]
+        amogus = open_counts[..., AMOGUS]
+        sergay = open_counts[..., SERGAY]
+        olympiad = open_counts[..., OLYMPIAD]
+        akim = open_counts[..., AKIM]
+        marat = open_counts[..., MARAT]
+        vanya = open_counts[..., VANYA]
+        jaman = open_counts[..., JAMAN]
+        extras.extend((
+            _norm(evgen * amogus, 12.0).unsqueeze(-1),
+            _norm(sergay * olympiad, 20.0).unsqueeze(-1),
+            _norm(akim * sergay, 12.0).unsqueeze(-1),
+            _norm(marat * olympiad, 16.0).unsqueeze(-1),
+            _norm(vanya * akim, 12.0).unsqueeze(-1),
+            _norm(jaman * closed, 20.0).unsqueeze(-1),
+        ))
+        return torch.cat(extras, dim=-1)
+
+    def _state_features_v4(self, base: dict[str, Any]) -> torch.Tensor:
+        """History features v4: what this player has held, closed, and passed on."""
+        b, n, c = base["b"], base["n"], base["c"]
+        dtype = self.dtype
+        open_counts = base["open_counts"]
+        hand = base["hand"]
+        closed_counts = base["closed_counts"]
+        seen = base["seen"]
+
+        extras: list[torch.Tensor] = []
+
+        # seen_counts:{card} -- copies ever held in hand.
+        extras.append(_norm(seen, 4.0))
+        # closed_counts:{card} -- copies already closed for flat points.
+        extras.append(_norm(closed_counts, 4.0))
+        # passed_cards:{card} -- seen but no longer held/kept/closed.
+        passed = (seen - hand - open_counts - closed_counts).clamp(min=0.0)
+        extras.append(_norm(passed, 4.0))
+        # seen_fraction -- fraction of the whole deck this player has seen.
+        deck_total = float(self.deck_counts.sum().item())
+        extras.append(
+            _norm(seen.sum(dim=-1), max(1.0, deck_total)).unsqueeze(-1)
+        )
+
+        return torch.cat(extras, dim=-1)
 
     def _action_features(self, base: dict[str, Any], version: int) -> torch.Tensor:
         b, n, c = base["b"], base["n"], base["c"]
@@ -610,7 +745,7 @@ class BatchedClassicEnv:
 
         if version == 1:
             return torch.cat(parts, dim=-1)
-        if version != 2:
+        if version not in (2, 3, 4):
             raise ValueError(f"Unsupported action feature version: {version}")
 
         thresholds = torch.ones(c, dtype=dtype, device=device)
@@ -645,7 +780,101 @@ class BatchedClassicEnv:
                 torch.full((b, n, 1, 1), 1.0 if self.round_number == 2 else 0.0, dtype=dtype, device=device).expand(b, n, ACTION_SIZE, 1),
             )
         )
+        if version == 3:
+            parts.append(self._action_features_v3(base, thresholds, has_threshold))
+        if version == 4:
+            parts.append(self._action_features_v3(base, thresholds, has_threshold))
+            parts.append(self._action_features_v4(base, thresholds, has_threshold))
         return torch.cat(parts, dim=-1)
+
+    def _action_features_v3(
+        self,
+        base: dict[str, Any],
+        thresholds: torch.Tensor,
+        has_threshold: torch.Tensor,
+    ) -> torch.Tensor:
+        b, n, _c = base["b"], base["n"], base["c"]
+        dtype = self.dtype
+        open_counts = base["open_counts"]
+        hand = base["hand"]
+        scores = base["scores"]
+        legal = base["legal"]
+        delta = base["delta"]
+        card_of_action = base["card_of_action"]
+        is_open = base["is_open_action"].to(dtype)
+
+        progress_action = (open_counts + hand)[..., card_of_action]
+        threshold_action = thresholds[card_of_action]
+        has_action = has_threshold[card_of_action].to(dtype)
+        completes = (
+            is_open
+            * has_action
+            * (progress_action >= threshold_action).to(dtype)
+        )
+        remaining = (
+            is_open
+            * has_action
+            * (threshold_action - progress_action).clamp(min=0.0)
+            / threshold_action
+        )
+        open_delta = delta[..., 0::2][..., card_of_action]
+        masked = delta.masked_fill(~legal, -1e9)
+        best = masked.max(dim=-1).values
+        mean = (
+            (delta * legal.to(dtype)).sum(dim=-1)
+            / legal.to(dtype).sum(dim=-1).clamp(min=1.0)
+        )
+        own_score = scores.unsqueeze(-1).expand(b, n, ACTION_SIZE)
+        points_to_success = (
+            (60.0 - scores).clamp(min=0.0).unsqueeze(-1).expand(b, n, ACTION_SIZE)
+        )
+        return torch.cat(
+            (
+                completes.unsqueeze(-1),
+                remaining.unsqueeze(-1),
+                (open_delta / 20.0).clamp(-1.0, 1.0).unsqueeze(-1),
+                ((delta - best.unsqueeze(-1)) / 20.0)
+                .clamp(-1.0, 1.0)
+                .unsqueeze(-1),
+                ((delta - mean.unsqueeze(-1)) / 20.0)
+                .clamp(-1.0, 1.0)
+                .unsqueeze(-1),
+                _norm(own_score, 150.0).unsqueeze(-1),
+                _norm(points_to_success, 60.0).unsqueeze(-1),
+            ),
+            dim=-1,
+        )
+
+    def _action_features_v4(
+        self,
+        base: dict[str, Any],
+        thresholds: torch.Tensor,
+        has_threshold: torch.Tensor,
+    ) -> torch.Tensor:
+        """History-aware per-action features: per-card personal history."""
+        _b, _n, _c = base["b"], base["n"], base["c"]
+        open_counts = base["open_counts"]
+        hand = base["hand"]
+        closed_counts = base["closed_counts"]
+        seen = base["seen"]
+        card_of_action = base["card_of_action"]
+
+        closed_on_card = closed_counts[..., card_of_action]
+        seen_on_card = seen[..., card_of_action]
+        passed_on_card = (
+            seen_on_card
+            - hand[..., card_of_action]
+            - open_counts[..., card_of_action]
+            - closed_on_card
+        ).clamp(min=0.0)
+        return torch.cat(
+            (
+                _norm(closed_on_card, 4.0).unsqueeze(-1),
+                _norm(seen_on_card, 4.0).unsqueeze(-1),
+                _norm(passed_on_card, 4.0).unsqueeze(-1),
+            ),
+            dim=-1,
+        )
 
     def observation(self, version: int = LATEST_FEATURE_VERSION) -> BatchedObservation:
         if version not in SUPPORTED_FEATURE_VERSIONS:
@@ -679,18 +908,33 @@ class BatchedClassicEnv:
             raise ValueError("Player count mismatch")
         open_counts = torch.zeros(1, n, NUM_CARDS, dtype=self.dtype)
         closed_counts = torch.zeros(1, n, dtype=self.dtype)
+        closed_by_card = torch.zeros(1, n, NUM_CARDS, dtype=self.dtype)
         hand_counts = torch.zeros(1, n, NUM_CARDS, dtype=self.dtype)
+        closed_data = getattr(env, "closed_cards", None)
         for player in range(n):
             for play in env.played[player]:
                 if play.is_closed:
                     closed_counts[0, player] += 1.0
                 else:
                     open_counts[0, player, CARD_INDEX[play.card_id]] += 1.0
+            if closed_data is not None:
+                for card_id, count in closed_data[player].items():
+                    closed_by_card[0, player, CARD_INDEX[card_id]] += float(count)
             for card_id in env.hands[player]:
                 hand_counts[0, player, CARD_INDEX[card_id]] += 1.0
         self.open = open_counts.to(self.device)
         self.closed = closed_counts.to(self.device)
+        self.closed_counts = closed_by_card.to(self.device)
         self.hand = hand_counts.to(self.device)
+        seen_counts = torch.zeros(1, n, NUM_CARDS, dtype=self.dtype)
+        seen_data = getattr(env, "seen", None)
+        for player in range(n):
+            if seen_data is not None:
+                for card_id, count in seen_data[player].items():
+                    seen_counts[0, player, CARD_INDEX[card_id]] += float(count)
+            else:
+                seen_counts[0, player] += hand_counts[0, player]
+        self.seen = seen_counts.to(self.device)
         self.scores = torch.tensor([env.scores], dtype=self.dtype, device=self.device)
         self.closed_total = torch.tensor(
             [float(env.closed_total)], dtype=self.dtype, device=self.device
